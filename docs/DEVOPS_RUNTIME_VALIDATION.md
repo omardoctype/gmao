@@ -1,6 +1,6 @@
 # DevOps Runtime Validation - GMAO
 
-Validation mise a jour le 2026-06-12 22:23 +01:00 depuis `C:\Users\omar1\Desktop\gmao`.
+Validation mise a jour le 2026-06-12 22:32 +01:00 depuis `C:\Users\omar1\Desktop\gmao`.
 
 Statuts autorises: `PASSED`, `FAILED`, `BLOCKED`, `NOT RUN`.
 
@@ -22,7 +22,7 @@ Statuts autorises: `PASSED`, `FAILED`, `BLOCKED`, `NOT RUN`.
 
 | Component | Static validation | Runtime validation | Evidence | Status |
 | --- | --- | --- | --- | --- |
-| GitHub Actions | NOT RUN | NOT RUN | Workflow corrige localement, en attente du commit/push et du nouveau run | NOT RUN |
+| GitHub Actions | PASSED | PASSED | Run `27444143226` success: backend, frontend, ai-service, compose config, Docker images, Helm/Kustomize static validation, summary. GHCR publish skipped on feature branch. | PASSED |
 | Backend tests | PASSED | PASSED | `mvn -B -ntp test`: 48 tests, 0 failures, 0 errors | PASSED |
 | Frontend build | PASSED | PASSED | Docker build frontend + page Nginx HTTP `200 OK` | PASSED |
 | AI service validation | PASSED | PASSED | `python -m compileall app`; `/health`, `/ai/ingest`, `/ai/ask`, `/ai/diagnosis` OK | PASSED |
@@ -57,6 +57,18 @@ Statuts autorises: `PASSED`, `FAILED`, `BLOCKED`, `NOT RUN`.
 | Predictive demo comparison | PASSED | PASSED | `EQ-PRED-LOW` score `35 MEDIUM`; `EQ-PRED-CRIT` score `100 CRITICAL` | PASSED |
 | Predictive + RAG | PASSED | PASSED | `/api/predictive/equipments/1/rag-analysis` retourne analyse RAG avec 2 sources | PASSED |
 
+## GitHub Actions
+
+| Champ | Valeur |
+| --- | --- |
+| Workflow | GMAO CI/CD |
+| Run URL | https://github.com/omardoctype/gmao/actions/runs/27444143226 |
+| Branche | devops/cloud-native |
+| Commit teste | 0ed4c9a62c0ca879df8692207ee4680884f994ef |
+| Conclusion | success |
+| Jobs success | Backend, Frontend, AI Service, Docker Compose static validation, Docker image frontend, Docker image backend, Docker image ai-service, Kubernetes and Helm static validation, CI/CD summary |
+| Job skipped attendu | GHCR publication, car limitee a main, tags ou dispatch manuel publish=true |
+
 ## Resultats Kubernetes actuels importants
 
 | Commande | Resume |
@@ -70,7 +82,7 @@ Statuts autorises: `PASSED`, `FAILED`, `BLOCKED`, `NOT RUN`.
 
 | Incident | Cause | Correction | Status |
 | --- | --- | --- | --- |
-| GitHub Actions `No space left on device` | Un job Docker unique accumulait les builds backend/frontend/AI et Compose sur le meme runner | Workflow scinde en jobs Docker separes + contextes Docker ignores + nettoyage cache uniquement dans runner CI | PASSED localement, en attente GitHub |
+| GitHub Actions `No space left on device` | Un job Docker unique accumulait les builds backend/frontend/AI et Compose sur le meme runner | Workflow scinde en jobs Docker separes + contextes Docker ignores + nettoyage cache uniquement dans runner CI | PASSED localement et sur GitHub Actions |
 | Compose MySQL port `3306` indisponible | MySQL local Windows utilisait deja `3306` | `MYSQL_HOST_PORT` ajoute, defaut `3307`; reseau interne inchange `mysql:3306` | PASSED |
 | AI Docker image trop lourde/lente | `sentence-transformers` tirait PyTorch et rendait le build AI trop lourd pour CI/local | Dependence rendue optionnelle; fallback `HashingEmbedder` deterministe leger | PASSED |
 | Backend K8s redemarrages initiaux | Spring Boot demarrait avant que MySQL soit pret pour les metadonnees JDBC | `initContainer wait-for-mysql` ajoute au backend Helm/Kustomize | PASSED |

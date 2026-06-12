@@ -8,6 +8,7 @@ Commande/page:
 
 ```powershell
 # Depuis GitHub: Actions > GMAO CI/CD > branche devops/cloud-native
+# Run valide: https://github.com/omardoctype/gmao/actions/runs/27444143226
 ```
 
 A rendre visible:
