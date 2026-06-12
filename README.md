@@ -16,10 +16,13 @@ Services principaux:
 - Frontend: http://localhost:5173
 - Backend: http://localhost:8080
 - AI Service: http://localhost:8000
-- MySQL: localhost:3306
+- MySQL Docker depuis l'hote: localhost:3307 par defaut
 - Prometheus: http://localhost:9090
 - Grafana: http://localhost:3000
 - Ollama local hote: http://localhost:11434
+
+Dans le reseau Docker Compose, le backend utilise toujours `mysql:3306`.
+Le port hote MySQL est configurable avec `MYSQL_HOST_PORT` afin d'eviter un conflit avec un MySQL local deja lance sur `3306`.
 
 Par defaut, `docker-compose.yml` suppose que Ollama tourne sur la machine hote Windows et que l'ai-service y accede via:
 

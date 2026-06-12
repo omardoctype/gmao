@@ -1,0 +1,96 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: {{ .Release.Namespace }}
+data:
+  datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:{{ .Values.monitoring.prometheus.service.port }}
+        isDefault: true
+        editable: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provider
+  namespace: {{ .Release.Namespace }}
+data:
+  dashboard.yaml: |
+    apiVersion: 1
+    providers:
+      - name: GMAO
+        orgId: 1
+        folder: GMAO
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-gmao-dashboard
+  namespace: {{ .Release.Namespace }}
+data:
+  gmao-platform-dashboard.json: |
+    {
+      "annotations": {"list": []},
+      "editable": true,
+      "panels": [
+        {
+          "datasource": {"type": "prometheus", "uid": "Prometheus"},
+          "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}},
+          "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+          "id": 1,
+          "options": {"colorMode": "background", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}},
+          "targets": [{"expr": "up{job=\"gmao-backend\"}", "legendFormat": "backend", "refId": "A"}],
+          "title": "Backend Up",
+          "type": "stat"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "Prometheus"},
+          "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}},
+          "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
+          "id": 2,
+          "options": {"colorMode": "background", "reduceOptions": {"calcs": ["lastNotNull"], "values": false}},
+          "targets": [{"expr": "up{job=\"gmao-ai-service\"}", "legendFormat": "ai-service", "refId": "A"}],
+          "title": "AI Service Up",
+          "type": "stat"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "Prometheus"},
+          "fieldConfig": {"defaults": {"unit": "reqps"}},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+          "id": 3,
+          "targets": [{"expr": "sum(rate(http_server_requests_seconds_count[5m])) by (uri, method)", "legendFormat": "{{ "{{method}}" }} {{ "{{uri}}" }}", "refId": "A"}],
+          "title": "Backend Request Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "Prometheus"},
+          "fieldConfig": {"defaults": {"unit": "s"}},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+          "id": 4,
+          "targets": [{"expr": "sum(gmao_ai_http_request_duration_seconds_sum{job=\"gmao-ai-service\"}) by (path) / sum(gmao_ai_http_request_duration_seconds_count{job=\"gmao-ai-service\"}) by (path)", "legendFormat": "avg {{ "{{path}}" }}", "refId": "A"}],
+          "title": "AI/RAG Average Duration",
+          "type": "timeseries"
+        }
+      ],
+      "refresh": "15s",
+      "schemaVersion": 40,
+      "tags": ["gmao", "devops"],
+      "time": {"from": "now-1h", "to": "now"},
+      "timezone": "browser",
+      "title": "GMAO Platform",
+      "uid": "gmao-platform",
+      "version": 1
+    }
+{{- end }}

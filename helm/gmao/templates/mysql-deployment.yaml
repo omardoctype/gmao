@@ -1,10 +1,11 @@
 {{- if .Values.mysql.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ .Values.mysql.name }}
   namespace: {{ .Release.Namespace }}
 spec:
+  serviceName: {{ .Values.mysql.name }}
   replicas: {{ .Values.mysql.replicas }}
   selector:
     matchLabels:
@@ -84,4 +85,3 @@ spec:
           persistentVolumeClaim:
             claimName: {{ .Values.mysql.persistence.claimName }}
 {{- end }}
-

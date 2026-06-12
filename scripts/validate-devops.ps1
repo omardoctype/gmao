@@ -5,6 +5,15 @@ param(
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 
+foreach ($candidatePath in @(
+    "C:\Program Files\Docker\Docker\resources\bin",
+    "$env:LOCALAPPDATA\Programs\Helm"
+)) {
+    if ((Test-Path -LiteralPath $candidatePath) -and ($env:PATH -notlike "*$candidatePath*")) {
+        $env:PATH = "$candidatePath;$env:PATH"
+    }
+}
+
 function Test-CommandAvailable {
     param([Parameter(Mandatory = $true)][string]$Name)
     return [bool](Get-Command $Name -ErrorAction SilentlyContinue)
@@ -86,14 +95,14 @@ if (-not $SkipBuild) {
 }
 
 if (Test-CommandAvailable docker) {
-    Invoke-Step "Docker Compose config" {
-        Push-Location $Root
-        try {
-            Invoke-Native docker compose config
-        } finally {
-            Pop-Location
-        }
+Invoke-Step "Docker Compose config" {
+    Push-Location $Root
+    try {
+        Invoke-Native docker compose config --quiet
+    } finally {
+        Pop-Location
     }
+}
 } else {
     Write-Host "SKIP Docker Compose validation because docker is not available." -ForegroundColor Yellow
 }

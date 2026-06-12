@@ -1,16 +1,57 @@
 from __future__ import annotations
 
 import logging
+import math
+import re
+from hashlib import blake2b
 from time import perf_counter
 from typing import Dict, List
 
 import chromadb
-from sentence_transformers import SentenceTransformer
 
 from app.document_loader import DocumentChunk
 
 
 logger = logging.getLogger(__name__)
+
+
+class HashingEmbedder:
+    """Small deterministic embedder used when sentence-transformers is unavailable."""
+
+    def __init__(self, dimensions: int = 384) -> None:
+        self.dimensions = dimensions
+
+    def encode(self, texts: List[str], normalize_embeddings: bool = True):
+        return [self._encode_one(text, normalize_embeddings) for text in texts]
+
+    def _encode_one(self, text: str, normalize_embeddings: bool) -> List[float]:
+        vector = [0.0] * self.dimensions
+        tokens = re.findall(r"[\wÀ-ÿ-]+", text.lower())
+        for token in tokens:
+            digest = blake2b(token.encode("utf-8"), digest_size=8).digest()
+            index = int.from_bytes(digest[:4], "big") % self.dimensions
+            sign = 1.0 if digest[4] % 2 == 0 else -1.0
+            vector[index] += sign
+
+        if normalize_embeddings:
+            norm = math.sqrt(sum(value * value for value in vector))
+            if norm > 0:
+                vector = [value / norm for value in vector]
+        return vector
+
+
+def _create_embedder(embedding_model: str):
+    try:
+        from sentence_transformers import SentenceTransformer
+
+        logger.info("AI vector store using sentence-transformers model=%s", embedding_model)
+        return SentenceTransformer(embedding_model)
+    except Exception as exc:  # pragma: no cover - runtime fallback for Docker-light image
+        logger.warning(
+            "sentence-transformers unavailable; using lightweight hashing embedder. reason=%s",
+            exc,
+        )
+        return HashingEmbedder()
 
 
 class VectorStore:
@@ -20,7 +61,13 @@ class VectorStore:
             name=collection_name,
             metadata={"hnsw:space": "cosine"},
         )
-        self.embedder = SentenceTransformer(embedding_model)
+        self.embedder = _create_embedder(embedding_model)
+
+    def _encode(self, texts: List[str]) -> List[List[float]]:
+        embeddings = self.embedder.encode(texts, normalize_embeddings=True)
+        if hasattr(embeddings, "tolist"):
+            return embeddings.tolist()
+        return embeddings
 
     def upsert_chunks(self, chunks: List[DocumentChunk], batch_size: int = 32) -> Dict[str, int]:
         if not chunks:
@@ -31,7 +78,7 @@ class VectorStore:
         for start in range(0, len(chunks), batch_size):
             batch = chunks[start : start + batch_size]
             texts = [item.text for item in batch]
-            embeddings = self.embedder.encode(texts, normalize_embeddings=True).tolist()
+            embeddings = self._encode(texts)
             ids = [item.chunk_id for item in batch]
             metadatas = [item.metadata for item in batch]
             self.collection.upsert(ids=ids, documents=texts, metadatas=metadatas, embeddings=embeddings)
@@ -48,7 +95,7 @@ class VectorStore:
             return []
 
         embedding_started_at = perf_counter()
-        query_embedding = self.embedder.encode([query_text], normalize_embeddings=True).tolist()
+        query_embedding = self._encode([query_text])
         embedding_ms = (perf_counter() - embedding_started_at) * 1000
 
         chroma_started_at = perf_counter()

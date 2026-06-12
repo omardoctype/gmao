@@ -1,6 +1,7 @@
 # Dependencies and build outputs
 node_modules/
 dist/
+coverage/
 
 # Logs and cache
 npm-debug.log*
@@ -8,9 +9,17 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .vite/
+*.log
+
+# Environment
+.env
+.env.*
 
 # VCS / editor / OS
 .git/
 .gitignore
+.github/
+.idea/
+.vscode/
 .DS_Store
 Thumbs.db

@@ -34,6 +34,26 @@ spec:
                   key: GF_SECURITY_ADMIN_PASSWORD
             - name: GF_USERS_ALLOW_SIGN_UP
               value: "false"
+          volumeMounts:
+            - name: grafana-datasources
+              mountPath: /etc/grafana/provisioning/datasources/datasource.yaml
+              subPath: datasource.yaml
+            - name: grafana-dashboard-provider
+              mountPath: /etc/grafana/provisioning/dashboards/dashboard.yaml
+              subPath: dashboard.yaml
+            - name: grafana-gmao-dashboard
+              mountPath: /var/lib/grafana/dashboards/gmao-platform-dashboard.json
+              subPath: gmao-platform-dashboard.json
+      volumes:
+        - name: grafana-datasources
+          configMap:
+            name: grafana-datasources
+        - name: grafana-dashboard-provider
+          configMap:
+            name: grafana-dashboard-provider
+        - name: grafana-gmao-dashboard
+          configMap:
+            name: grafana-gmao-dashboard
 ---
 apiVersion: v1
 kind: Service

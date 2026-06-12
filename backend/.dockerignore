@@ -1,0 +1,19 @@
+# Maven build output
+target/
+
+# Runtime data
+uploads/
+*.log
+
+# Environment and secrets
+.env
+.env.*
+
+# VCS/editor/OS noise
+.git/
+.gitignore
+.github/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

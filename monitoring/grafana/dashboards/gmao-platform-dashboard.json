@@ -287,12 +287,12 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(gmao_ai_http_request_duration_seconds_bucket[5m])) by (le, path))",
-          "legendFormat": "p95 {{path}}",
+          "expr": "sum(gmao_ai_http_request_duration_seconds_sum{job=\"gmao-ai-service\"}) by (path) / sum(gmao_ai_http_request_duration_seconds_count{job=\"gmao-ai-service\"}) by (path)",
+          "legendFormat": "avg {{path}}",
           "refId": "A"
         }
       ],
-      "title": "AI/RAG Latency p95",
+      "title": "AI/RAG Average Duration",
       "type": "timeseries"
     }
   ],

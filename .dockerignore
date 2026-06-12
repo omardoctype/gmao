@@ -1,16 +1,39 @@
-# VCS
+# VCS and CI metadata
 .git
 .gitignore
+.github/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+!.env.production.example
 
 # Other project parts not needed for backend image build
 frontend/
 ai-service/
+k8s/
+helm/
+monitoring/
+docs/
 
 # Backend build/runtime artifacts
 backend/target/
 backend/uploads/
 backend/*.log
+*.log
+
+# Local runtime volumes and generated data
+uploads/
+mysql-data/
+ollama-data/
+prometheus-data/
+grafana-data/
+docker-data/
+tmp/
 
 # OS / editor noise
 **/.DS_Store
 **/Thumbs.db
+**/.idea/
+**/.vscode/

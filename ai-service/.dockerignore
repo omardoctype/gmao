@@ -1,5 +1,7 @@
 # Python cache/virtualenv
 .venv/
+venv/
+env/
 **/__pycache__/
 *.pyc
 *.pyo
@@ -12,9 +14,19 @@
 *.log
 chroma_db/
 .chroma/
+uploads/
+documents/generated/
+coverage/
+
+# Environment
+.env
+.env.*
 
 # VCS/OS noise
 .git/
 .gitignore
+.github/
+.idea/
+.vscode/
 .DS_Store
 Thumbs.db

@@ -13,6 +13,12 @@ on:
       - main
       - develop
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish Docker images to GHCR"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: gmao-ci-cd-${{ github.ref }}
@@ -109,10 +115,10 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall app
 
-  docker-build:
-    name: Docker - build images and compose config
+  compose-validation:
+    name: Docker Compose - static validation
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 10
     needs:
       - backend
       - frontend
@@ -125,30 +131,136 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Show Docker versions
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Validate Docker Compose quietly
+        run: docker compose config --quiet
+
+      - name: Render Docker Compose configuration
+        run: docker compose config
+
+  docker-build-frontend:
+    name: Docker image - frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs:
+      - frontend
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Validate Docker Compose config
-        run: docker compose config
-
-      - name: Build backend image
-        run: docker build -t "${BACKEND_IMAGE}:ci" -f Dockerfile .
+      - name: Disk usage before build
+        run: |
+          df -h
+          docker system df
 
       - name: Build frontend image
-        run: docker build -t "${FRONTEND_IMAGE}:ci" -f frontend/Dockerfile frontend
+        run: docker build -t gmao-frontend:ci -f frontend/Dockerfile frontend
+
+      - name: Inspect frontend image
+        run: |
+          docker image inspect gmao-frontend:ci
+          docker images gmao-frontend:ci
+
+      - name: Cleanup frontend image and builder cache
+        if: always()
+        run: |
+          docker rmi gmao-frontend:ci || true
+          docker builder prune -af || true
+          docker system df || true
+
+  docker-build-backend:
+    name: Docker image - backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs:
+      - backend
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Disk usage before build
+        run: |
+          df -h
+          docker system df
+
+      - name: Build backend image
+        run: docker build -t gmao-backend:ci -f Dockerfile .
+
+      - name: Inspect backend image
+        run: |
+          docker image inspect gmao-backend:ci
+          docker images gmao-backend:ci
+
+      - name: Cleanup backend image and builder cache
+        if: always()
+        run: |
+          docker rmi gmao-backend:ci || true
+          docker builder prune -af || true
+          docker system df || true
+
+  docker-build-ai-service:
+    name: Docker image - ai-service
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs:
+      - ai-service
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Disk usage before build
+        run: |
+          df -h
+          docker system df
 
       - name: Build ai-service image
-        run: docker build -t "${AI_SERVICE_IMAGE}:ci" -f ai-service/Dockerfile ai-service
+        run: docker build -t gmao-ai-service:ci -f ai-service/Dockerfile ai-service
 
-      - name: Build compose stack
-        run: docker compose build
+      - name: Inspect ai-service image
+        run: |
+          docker image inspect gmao-ai-service:ci
+          docker images gmao-ai-service:ci
+
+      - name: Cleanup ai-service image and builder cache
+        if: always()
+        run: |
+          docker rmi gmao-ai-service:ci || true
+          docker builder prune -af || true
+          docker system df || true
 
   helm-k8s-validate:
-    name: Kubernetes and Helm - template validation
+    name: Kubernetes and Helm - static validation
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs:
-      - docker-build
+      - backend
+      - frontend
+      - ai-service
     defaults:
       run:
         shell: bash
@@ -160,32 +272,55 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v4
         with:
-          version: v3.16.3
+          version: v4.2.1
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.34.1
 
       - name: Helm lint
         run: helm lint helm/gmao
 
-      - name: Helm template
+      - name: Helm template values-dev
         run: |
-          if [ -f helm/gmao/values-dev.yaml ]; then
-            helm template gmao helm/gmao --namespace gmao --values helm/gmao/values-dev.yaml > /tmp/gmao-rendered.yaml
-          else
-            helm template gmao helm/gmao --namespace gmao > /tmp/gmao-rendered.yaml
-          fi
+          helm template gmao helm/gmao --namespace gmao --values helm/gmao/values-dev.yaml --debug > /tmp/gmao-rendered.yaml
           test -s /tmp/gmao-rendered.yaml
+          wc -l /tmp/gmao-rendered.yaml
 
-      - name: Kubernetes YAML presence check
+      - name: Kustomize render
         run: |
-          test -d k8s
-          find k8s -name "*.yaml" -o -name "*.yml"
+          kubectl kustomize k8s > /tmp/gmao-kustomize.yaml
+          test -s /tmp/gmao-kustomize.yaml
+          wc -l /tmp/gmao-kustomize.yaml
 
   publish-images:
-    name: Publish images to GHCR
+    name: Publish image to GHCR
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 35
     needs:
+      - compose-validation
+      - docker-build-frontend
+      - docker-build-backend
+      - docker-build-ai-service
       - helm-k8s-validate
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))) || (github.event_name == 'workflow_dispatch' && inputs.publish) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: frontend
+            image: ghcr.io/omardoctype/gmao-frontend
+            context: frontend
+            dockerfile: frontend/Dockerfile
+          - name: backend
+            image: ghcr.io/omardoctype/gmao-backend
+            context: .
+            dockerfile: Dockerfile
+          - name: ai-service
+            image: ghcr.io/omardoctype/gmao-ai-service
+            context: ai-service
+            dockerfile: ai-service/Dockerfile
     defaults:
       run:
         shell: bash
@@ -204,37 +339,26 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Publish backend
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: |
-            ${{ env.BACKEND_IMAGE }}:latest
-            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+      - name: Build and push ${{ matrix.name }}
+        run: |
+          set -euo pipefail
+          TAG_ARGS=(-t "${{ matrix.image }}:${GITHUB_SHA}")
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            TAG_ARGS+=(-t "${{ matrix.image }}:latest")
+          fi
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG_ARGS+=(-t "${{ matrix.image }}:${GITHUB_REF_NAME}")
+          fi
+          docker build "${TAG_ARGS[@]}" -f "${{ matrix.dockerfile }}" "${{ matrix.context }}"
+          for ((i=1; i<${#TAG_ARGS[@]}; i+=2)); do
+            docker push "${TAG_ARGS[$i]}"
+          done
 
-      - name: Publish frontend
-        uses: docker/build-push-action@v6
-        with:
-          context: frontend
-          file: frontend/Dockerfile
-          push: true
-          build-args: |
-            VITE_API_BASE_URL=/api
-          tags: |
-            ${{ env.FRONTEND_IMAGE }}:latest
-            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
-
-      - name: Publish ai-service
-        uses: docker/build-push-action@v6
-        with:
-          context: ai-service
-          file: ai-service/Dockerfile
-          push: true
-          tags: |
-            ${{ env.AI_SERVICE_IMAGE }}:latest
-            ${{ env.AI_SERVICE_IMAGE }}:${{ github.sha }}
+      - name: Cleanup publish runner
+        if: always()
+        run: |
+          docker builder prune -af || true
+          docker system df || true
 
   summary:
     name: CI/CD summary
@@ -243,8 +367,12 @@ jobs:
       - backend
       - frontend
       - ai-service
-      - docker-build
+      - compose-validation
+      - docker-build-frontend
+      - docker-build-backend
+      - docker-build-ai-service
       - helm-k8s-validate
+      - publish-images
     if: always()
     defaults:
       run:
@@ -253,13 +381,35 @@ jobs:
     steps:
       - name: Verify global status
         run: |
-          echo "Backend job: ${{ needs.backend.result }}"
-          echo "Frontend job: ${{ needs.frontend.result }}"
-          echo "AI service job: ${{ needs['ai-service'].result }}"
-          echo "Docker build job: ${{ needs['docker-build'].result }}"
-          echo "Helm/K8s validation job: ${{ needs['helm-k8s-validate'].result }}"
+          set -euo pipefail
+          echo "Backend validation: ${{ needs.backend.result }}"
+          echo "Frontend validation: ${{ needs.frontend.result }}"
+          echo "AI service validation: ${{ needs['ai-service'].result }}"
+          echo "Compose validation: ${{ needs['compose-validation'].result }}"
+          echo "Frontend Docker image: ${{ needs['docker-build-frontend'].result }}"
+          echo "Backend Docker image: ${{ needs['docker-build-backend'].result }}"
+          echo "AI service Docker image: ${{ needs['docker-build-ai-service'].result }}"
+          echo "Kubernetes/Helm static validation: ${{ needs['helm-k8s-validate'].result }}"
+          echo "GHCR publication: ${{ needs['publish-images'].result }}"
+
           test "${{ needs.backend.result }}" = "success"
           test "${{ needs.frontend.result }}" = "success"
           test "${{ needs['ai-service'].result }}" = "success"
-          test "${{ needs['docker-build'].result }}" = "success"
+          test "${{ needs['compose-validation'].result }}" = "success"
+          test "${{ needs['docker-build-frontend'].result }}" = "success"
+          test "${{ needs['docker-build-backend'].result }}" = "success"
+          test "${{ needs['docker-build-ai-service'].result }}" = "success"
           test "${{ needs['helm-k8s-validate'].result }}" = "success"
+
+          case "${{ needs['publish-images'].result }}" in
+            success)
+              echo "GHCR publication passed."
+              ;;
+            skipped)
+              echo "GHCR publication skipped: limited to main, tags, or manual workflow_dispatch publish=true."
+              ;;
+            *)
+              echo "GHCR publication failed or was cancelled."
+              exit 1
+              ;;
+          esac

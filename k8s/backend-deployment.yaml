@@ -13,6 +13,24 @@ spec:
       labels:
         app: backend
     spec:
+      initContainers:
+        - name: wait-for-mysql
+          image: mysql:8.4
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gmao-secrets
+                  key: MYSQL_ROOT_PASSWORD
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqladmin ping -h mysql -uroot --silent; do
+                echo "Waiting for MySQL to be ready..."
+                sleep 5
+              done
       containers:
         - name: backend
           image: gmao-backend:latest
@@ -58,4 +76,3 @@ spec:
             periodSeconds: 20
             timeoutSeconds: 5
             failureThreshold: 6
-

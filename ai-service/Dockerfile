@@ -1,16 +1,5 @@
 # syntax=docker/dockerfile:1.7
 
-FROM python:3.11-slim AS builder
-
-ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
-WORKDIR /build
-
-COPY requirements.txt .
-RUN pip wheel --wheel-dir /wheels -r requirements.txt
-
 FROM python:3.11-slim AS runtime
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
@@ -28,10 +17,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /wheels /wheels
 COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir --no-index --find-links=/wheels -r /app/requirements.txt \
-    && rm -rf /wheels
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir -r /app/requirements.txt
 
 COPY app /app/app
 COPY documents /app/documents
