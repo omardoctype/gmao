@@ -1,0 +1,16 @@
+{{- if .Values.aiService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.aiService.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: {{ .Values.aiService.service.type }}
+  selector:
+    app: {{ .Values.aiService.name }}
+  ports:
+    - name: http
+      port: {{ .Values.aiService.service.port }}
+      targetPort: {{ .Values.aiService.service.targetPort }}
+{{- end }}
+

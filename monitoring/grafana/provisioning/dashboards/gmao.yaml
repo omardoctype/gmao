@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: GMAO
+    orgId: 1
+    folder: GMAO
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

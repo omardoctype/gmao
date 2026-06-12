@@ -1,0 +1,235 @@
+namespace:
+  name: gmao
+  create: false
+
+config:
+  springProfilesActive: prod
+  serverPort: "8080"
+  appCorsAllowedOrigins: "https://gmao.example.com"
+  appAiServiceBaseUrl: "http://ai-service:8000"
+  aiProvider: ollama
+  ollamaBaseUrl: "http://ollama:11434"
+  ollamaModel: "qwen2.5:1.5b"
+  frontendApiBaseUrl: "/api"
+
+secrets:
+  create: true
+  springDatasourceUsername: "<CHANGE_ME_DB_USERNAME>"
+  springDatasourcePassword: "<CHANGE_ME_DB_PASSWORD>"
+  appJwtSecret: "<CHANGE_ME_JWT_SECRET>"
+  mysqlRootPassword: "<CHANGE_ME_MYSQL_ROOT_PASSWORD>"
+  mysqlDatabase: "<CHANGE_ME_MYSQL_DATABASE>"
+  mysqlUser: "<CHANGE_ME_MYSQL_USER>"
+  mysqlPassword: "<CHANGE_ME_MYSQL_PASSWORD>"
+  grafanaAdminUser: "admin"
+  grafanaAdminPassword: "<CHANGE_ME_GRAFANA_PASSWORD>"
+
+mysql:
+  enabled: true
+  name: mysql
+  replicas: 1
+  image:
+    repository: mysql
+    tag: "8.4"
+    pullPolicy: IfNotPresent
+  containerPort: 3306
+  service:
+    type: ClusterIP
+    port: 3306
+    targetPort: 3306
+  persistence:
+    enabled: true
+    claimName: mysql-pvc
+    accessModes:
+      - ReadWriteOnce
+    size: 5Gi
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  probes:
+    startup:
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 30
+    readiness:
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 6
+    liveness:
+      periodSeconds: 20
+      timeoutSeconds: 5
+      failureThreshold: 6
+
+backend:
+  enabled: true
+  name: backend
+  replicas: 1
+  image:
+    repository: ghcr.io/omardoctype/gmao-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort: 8080
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+  env:
+    springDatasourceUrl: "jdbc:mysql://mysql:3306/gmao?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+    appAiServiceBaseUrl: "http://ai-service:8000"
+  persistence:
+    enabled: true
+    claimName: backend-uploads-pvc
+    accessModes:
+      - ReadWriteOnce
+    size: 2Gi
+    mountPath: /app/uploads
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  probes:
+    path: /actuator/health
+    startup:
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 30
+    readiness:
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 6
+    liveness:
+      periodSeconds: 20
+      timeoutSeconds: 5
+      failureThreshold: 6
+
+aiService:
+  enabled: true
+  name: ai-service
+  replicas: 1
+  image:
+    repository: ghcr.io/omardoctype/gmao-ai-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort: 8000
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  persistence:
+    enabled: true
+    claimName: ai-service-data-pvc
+    accessModes:
+      - ReadWriteOnce
+    size: 2Gi
+    mountPath: /app/chroma_db
+  env:
+    chromaDir: /app/chroma_db
+  resources:
+    requests:
+      cpu: 300m
+      memory: 768Mi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+  probes:
+    path: /health
+    startup:
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 30
+    readiness:
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 6
+    liveness:
+      periodSeconds: 20
+      timeoutSeconds: 5
+      failureThreshold: 6
+
+frontend:
+  enabled: true
+  name: frontend
+  replicas: 2
+  image:
+    repository: ghcr.io/omardoctype/gmao-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort: 80
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  probes:
+    path: /
+    startup:
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 30
+    readiness:
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 6
+    liveness:
+      periodSeconds: 20
+      timeoutSeconds: 5
+      failureThreshold: 6
+
+ingress:
+  enabled: true
+  className: nginx
+  host: gmao.local
+  paths:
+    api: /api
+    swaggerUi: /swagger-ui
+    swaggerUiHtml: /swagger-ui.html
+    apiDocs: /v3/api-docs
+    root: /
+
+hpa:
+  enabled: true
+  backend:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+  frontend:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+  aiService:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 75
+
+monitoring:
+  enabled: true
+  prometheus:
+    image:
+      repository: prom/prometheus
+      tag: v2.55.1
+      pullPolicy: IfNotPresent
+    service:
+      port: 9090
+  grafana:
+    image:
+      repository: grafana/grafana
+      tag: 11.3.1
+      pullPolicy: IfNotPresent
+    service:
+      port: 3000

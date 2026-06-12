@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS work_orders (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    reference VARCHAR(50) NOT NULL,
+    type VARCHAR(30) NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    priority VARCHAR(30) NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+    planned_date DATETIME(6) NULL,
+    started_at DATETIME(6) NULL,
+    completed_at DATETIME(6) NULL,
+    estimated_cost DECIMAL(12,2) NULL,
+    real_cost DECIMAL(12,2) NULL,
+    description VARCHAR(2000) NOT NULL,
+    equipment_id BIGINT NOT NULL,
+    breakdown_id BIGINT NULL,
+    assigned_technician_id BIGINT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_work_orders_reference UNIQUE (reference),
+    CONSTRAINT fk_work_orders_equipment FOREIGN KEY (equipment_id) REFERENCES equipments (id),
+    CONSTRAINT fk_work_orders_breakdown FOREIGN KEY (breakdown_id) REFERENCES breakdowns (id),
+    CONSTRAINT fk_work_orders_assigned_technician FOREIGN KEY (assigned_technician_id) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

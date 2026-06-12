@@ -1,0 +1,16 @@
+{{- if and .Values.aiService.enabled .Values.aiService.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.aiService.persistence.claimName }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+{{- range .Values.aiService.persistence.accessModes }}
+    - {{ . }}
+{{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.aiService.persistence.size }}
+{{- end }}
+

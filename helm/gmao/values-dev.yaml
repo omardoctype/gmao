@@ -1,0 +1,41 @@
+namespace:
+  create: true
+  name: gmao
+
+config:
+  appCorsAllowedOrigins: "http://localhost:5173,http://127.0.0.1:5173,http://gmao.local"
+  ollamaBaseUrl: "http://ollama:11434"
+  frontendApiBaseUrl: "/api"
+
+backend:
+  replicas: 1
+  image:
+    repository: gmao-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+frontend:
+  replicas: 1
+  image:
+    repository: gmao-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+aiService:
+  replicas: 1
+  image:
+    repository: gmao-ai-service
+    tag: latest
+    pullPolicy: IfNotPresent
+
+secrets:
+  create: true
+  springDatasourceUsername: "gmao_app"
+  springDatasourcePassword: "gmao_password_change_me"
+  appJwtSecret: "change-this-dev-secret-before-production-please"
+  mysqlRootPassword: "gmao_root_password_change_me"
+  mysqlDatabase: "gmao"
+  mysqlUser: "gmao_app"
+  mysqlPassword: "gmao_password_change_me"
+  grafanaAdminUser: "admin"
+  grafanaAdminPassword: "gmao_grafana_change_me"

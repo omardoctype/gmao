@@ -1,0 +1,39 @@
+namespace:
+  create: false
+  name: gmao
+
+config:
+  appCorsAllowedOrigins: "https://gmao.example.com"
+  appAiServiceBaseUrl: "http://ai-service:8000"
+  ollamaBaseUrl: "http://ollama:11434"
+  frontendApiBaseUrl: "/api"
+
+backend:
+  replicas: 2
+  image:
+    repository: ghcr.io/omardoctype/gmao-backend
+    tag: latest
+    pullPolicy: Always
+
+frontend:
+  replicas: 2
+  image:
+    repository: ghcr.io/omardoctype/gmao-frontend
+    tag: latest
+    pullPolicy: Always
+
+aiService:
+  replicas: 1
+  image:
+    repository: ghcr.io/omardoctype/gmao-ai-service
+    tag: latest
+    pullPolicy: Always
+
+secrets:
+  create: false
+
+hpa:
+  enabled: true
+
+monitoring:
+  enabled: true

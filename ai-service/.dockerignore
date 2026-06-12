@@ -1,0 +1,20 @@
+# Python cache/virtualenv
+.venv/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local tooling/state
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+chroma_db/
+.chroma/
+
+# VCS/OS noise
+.git/
+.gitignore
+.DS_Store
+Thumbs.db

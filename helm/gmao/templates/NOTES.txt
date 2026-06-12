@@ -1,0 +1,27 @@
+GMAO has been installed in namespace {{ .Release.Namespace }}.
+
+Useful commands:
+
+  kubectl get pods -n {{ .Release.Namespace }}
+  kubectl get svc -n {{ .Release.Namespace }}
+
+Frontend local access:
+
+  kubectl port-forward svc/{{ .Values.frontend.name }} 5173:{{ .Values.frontend.service.port }} -n {{ .Release.Namespace }}
+  Open http://localhost:5173
+
+Backend local access:
+
+  kubectl port-forward svc/{{ .Values.backend.name }} 8080:{{ .Values.backend.service.port }} -n {{ .Release.Namespace }}
+  Open http://localhost:8080/actuator/health
+
+AI service local access:
+
+  kubectl port-forward svc/{{ .Values.aiService.name }} 8000:{{ .Values.aiService.service.port }} -n {{ .Release.Namespace }}
+  Open http://localhost:8000/health
+
+If Ollama runs inside Kubernetes, pull the demo model after the pod starts:
+
+  kubectl exec -it deployment/ollama -n {{ .Release.Namespace }} -- ollama pull qwen2.5:1.5b
+
+Do not use placeholder secrets in production. Create a real Kubernetes Secret named gmao-secrets before installing with values-prod.yaml.

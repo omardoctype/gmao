@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-service
+  namespace: gmao
+  labels:
+    app: ai-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-service
+  template:
+    metadata:
+      labels:
+        app: ai-service
+    spec:
+      containers:
+        - name: ai-service
+          image: ghcr.io/omardoctype/gmao-ai-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: AI_PROVIDER
+              valueFrom:
+                configMapKeyRef:
+                  name: gmao-config
+                  key: AI_PROVIDER
+            - name: OLLAMA_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: gmao-config
+                  key: OLLAMA_BASE_URL
+            - name: OLLAMA_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: gmao-config
+                  key: OLLAMA_BASE_URL
+            - name: OLLAMA_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: gmao-config
+                  key: OLLAMA_MODEL
+            - name: DOCUMENTS_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: gmao-config
+                  key: DOCUMENTS_DIR
+            - name: SOURCE_DOCUMENTS_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: gmao-config
+                  key: SOURCE_DOCUMENTS_DIR
+            - name: CHROMA_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: gmao-config
+                  key: CHROMA_DIR
+          volumeMounts:
+            - name: ai-service-data
+              mountPath: /app/chroma_db
+          resources:
+            requests:
+              cpu: 300m
+              memory: 768Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+      volumes:
+        - name: ai-service-data
+          persistentVolumeClaim:
+            claimName: ai-service-data-pvc

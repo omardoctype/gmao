@@ -1,0 +1,14 @@
+apiVersion: v2
+name: gmao
+description: Helm chart for the GMAO platform (frontend, backend, ai-service, mysql)
+type: application
+version: 0.2.0
+appVersion: "1.0.0"
+maintainers:
+  - name: omardoctype
+keywords:
+  - gmao
+  - spring-boot
+  - react
+  - fastapi
+  - rag

@@ -1,0 +1,199 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 212 26% 96%;
+    --foreground: 217 40% 14%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 217 40% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 217 40% 14%;
+
+    --primary: 213 62% 23%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 22% 92%;
+    --secondary-foreground: 215 31% 22%;
+
+    --muted: 212 24% 90%;
+    --muted-foreground: 215 15% 38%;
+
+    --accent: 198 64% 37%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 72% 47%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 152 59% 30%;
+    --success-foreground: 210 40% 98%;
+    --warning: 36 88% 43%;
+    --warning-foreground: 210 40% 98%;
+
+    --border: 214 23% 81%;
+    --input: 214 23% 81%;
+    --ring: 198 52% 41%;
+
+    --surface: 0 0% 100%;
+    --surface-elevated: 210 20% 99%;
+    --surface-muted: 213 21% 93%;
+    --sidebar: 212 34% 98%;
+    --sidebar-foreground: 217 40% 14%;
+
+    --chart-1: 214 58% 27%;
+    --chart-2: 198 52% 41%;
+    --chart-3: 156 62% 31%;
+    --chart-4: 35 86% 45%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 216 28% 11%;
+    --foreground: 210 31% 94%;
+    --card: 215 23% 15%;
+    --card-foreground: 210 31% 94%;
+    --popover: 215 23% 15%;
+    --popover-foreground: 210 31% 94%;
+    --primary: 201 52% 54%;
+    --primary-foreground: 216 30% 12%;
+    --secondary: 218 19% 22%;
+    --secondary-foreground: 210 31% 94%;
+    --muted: 218 19% 22%;
+    --muted-foreground: 215 20% 70%;
+    --accent: 191 58% 49%;
+    --accent-foreground: 216 30% 12%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 210 31% 94%;
+    --success: 156 57% 44%;
+    --success-foreground: 216 30% 12%;
+    --warning: 37 90% 58%;
+    --warning-foreground: 216 30% 12%;
+    --border: 217 18% 29%;
+    --input: 217 18% 29%;
+    --ring: 191 59% 49%;
+
+    --surface: 215 23% 15%;
+    --surface-elevated: 217 21% 19%;
+    --surface-muted: 218 19% 22%;
+    --sidebar: 216 24% 13%;
+    --sidebar-foreground: 210 31% 94%;
+
+    --chart-1: 203 53% 53%;
+    --chart-2: 191 59% 49%;
+    --chart-3: 156 55% 44%;
+    --chart-4: 37 90% 58%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-foreground;
+    background-image:
+      radial-gradient(circle at 11% 20%, rgba(10, 67, 113, 0.1), transparent 34%),
+      radial-gradient(circle at 86% 18%, rgba(17, 116, 140, 0.08), transparent 36%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(241, 245, 250, 0.97));
+    font-feature-settings: "cv03", "cv04", "cv11";
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display text-foreground;
+  }
+
+  h1 {
+    @apply text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl;
+  }
+
+  h2 {
+    @apply text-xl font-semibold tracking-tight sm:text-2xl;
+  }
+
+  p {
+    @apply text-sm leading-relaxed text-muted-foreground sm:text-base;
+  }
+}
+
+@layer components {
+  .ds-page {
+    @apply mx-auto w-full max-w-7xl px-4 py-6 md:px-6 lg:px-8;
+  }
+
+  .ds-grid {
+    @apply grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12;
+  }
+
+  .ds-card {
+    @apply rounded-lg border bg-card p-4 text-card-foreground shadow-soft shadow-inset md:p-5;
+  }
+
+  .ds-card-title {
+    @apply font-display text-base font-semibold text-foreground sm:text-lg;
+  }
+
+  .ds-card-subtitle {
+    @apply mt-1 text-xs text-muted-foreground sm:text-sm;
+  }
+
+  .ds-form {
+    @apply grid grid-cols-1 gap-4 md:gap-5;
+  }
+
+  .ds-form-grid {
+    @apply grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5;
+  }
+
+  .ds-field {
+    @apply grid grid-cols-1 gap-2;
+  }
+
+  .ds-label {
+    @apply text-sm font-medium text-foreground;
+  }
+
+  .ds-help {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .ds-error {
+    @apply text-xs font-medium text-destructive;
+  }
+
+  .ds-section-heading {
+    @apply flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between;
+  }
+
+  .ds-stack {
+    @apply space-y-4 md:space-y-6;
+  }
+
+  .ds-button-group {
+    @apply flex flex-col gap-2 sm:flex-row sm:items-center;
+  }
+
+  .ds-table-wrap {
+    @apply w-full overflow-x-auto rounded-lg border;
+  }
+
+  .ds-table {
+    @apply w-full min-w-[700px] text-sm;
+  }
+
+  .ds-table th {
+    @apply bg-secondary/60 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+  }
+
+  .ds-table td {
+    @apply border-t px-3 py-3 align-middle text-foreground;
+  }
+}

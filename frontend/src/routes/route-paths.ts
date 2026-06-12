@@ -1,0 +1,16 @@
+export const routePaths = {
+  root: "/",
+  login: "/login",
+  dashboard: "/dashboard",
+  predictiveMaintenance: "/predictive-maintenance",
+  aiAssistant: "/ai-assistant",
+  equipments: "/equipments",
+  breakdowns: "/breakdowns",
+  workOrders: "/work-orders",
+  stockParts: "/stock-parts",
+  maintenancePlans: "/maintenance-plans",
+  notifications: "/notifications",
+  auditLogs: "/audit-logs",
+  users: "/users",
+  myProfile: "/my-profile",
+} as const;

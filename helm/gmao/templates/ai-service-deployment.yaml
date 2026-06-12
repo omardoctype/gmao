@@ -1,0 +1,78 @@
+{{- if .Values.aiService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.aiService.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.aiService.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.aiService.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.aiService.name }}
+    spec:
+      containers:
+        - name: {{ .Values.aiService.name }}
+          image: "{{ .Values.aiService.image.repository }}:{{ .Values.aiService.image.tag }}"
+          imagePullPolicy: {{ .Values.aiService.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.aiService.containerPort }}
+              name: http
+          env:
+            - name: AI_PROVIDER
+              valueFrom:
+                configMapKeyRef:
+                  name: gmao-config
+                  key: AI_PROVIDER
+            - name: OLLAMA_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: gmao-config
+                  key: OLLAMA_BASE_URL
+            - name: OLLAMA_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: gmao-config
+                  key: OLLAMA_MODEL
+            - name: CHROMA_DIR
+              value: {{ .Values.aiService.env.chromaDir | quote }}
+          volumeMounts:
+            - name: ai-service-data
+              mountPath: {{ .Values.aiService.persistence.mountPath }}
+          resources:
+            requests:
+              cpu: {{ .Values.aiService.resources.requests.cpu | quote }}
+              memory: {{ .Values.aiService.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.aiService.resources.limits.cpu | quote }}
+              memory: {{ .Values.aiService.resources.limits.memory | quote }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.aiService.probes.path }}
+              port: {{ .Values.aiService.containerPort }}
+            periodSeconds: {{ .Values.aiService.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.aiService.probes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.aiService.probes.startup.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.aiService.probes.path }}
+              port: {{ .Values.aiService.containerPort }}
+            periodSeconds: {{ .Values.aiService.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.aiService.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.aiService.probes.readiness.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.aiService.probes.path }}
+              port: {{ .Values.aiService.containerPort }}
+            periodSeconds: {{ .Values.aiService.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.aiService.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.aiService.probes.liveness.failureThreshold }}
+      volumes:
+        - name: ai-service-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.aiService.persistence.claimName }}
+{{- end }}
+

@@ -1,0 +1,16 @@
+# VCS
+.git
+.gitignore
+
+# Other project parts not needed for backend image build
+frontend/
+ai-service/
+
+# Backend build/runtime artifacts
+backend/target/
+backend/uploads/
+backend/*.log
+
+# OS / editor noise
+**/.DS_Store
+**/Thumbs.db
