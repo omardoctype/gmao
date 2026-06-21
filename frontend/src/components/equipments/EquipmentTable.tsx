@@ -86,14 +86,14 @@ export function EquipmentTable({
           <TableHead>Localisation</TableHead>
           <TableHead>Statut</TableHead>
           <TableHead>Criticite</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="sticky right-0 bg-secondary/95 text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {equipments.map((equipment) => (
           <TableRow key={equipment.id}>
             <TableCell className="font-semibold">{equipment.code}</TableCell>
-            <TableCell>
+            <TableCell className="sticky right-0 bg-surface/95">
               <p className="font-medium text-foreground">{equipment.name}</p>
               <p className="text-xs text-muted-foreground">{equipment.brand || "Marque non renseignee"}</p>
             </TableCell>
@@ -111,12 +111,22 @@ export function EquipmentTable({
             </TableCell>
             <TableCell>
               <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" onClick={() => onView(equipment)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onView(equipment)}
+                  aria-label={`Voir les details de l'equipement ${equipment.code}`}
+                >
                   <Eye className="h-4 w-4" />
                 </Button>
                 {canManage ? (
                   <>
-                    <Button variant="ghost" size="sm" onClick={() => onEdit(equipment)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(equipment)}
+                      aria-label={`Modifier l'equipement ${equipment.code}`}
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
@@ -125,6 +135,7 @@ export function EquipmentTable({
                       className="text-destructive hover:text-destructive"
                       disabled={deletingEquipmentId === equipment.id}
                       onClick={() => onDelete(equipment)}
+                      aria-label={`Supprimer l'equipement ${equipment.code}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

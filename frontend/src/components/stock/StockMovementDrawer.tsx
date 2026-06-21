@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowDownCircle, ArrowUpCircle, X } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { ResponsiveSidePanel } from "@/components/ui/overlay";
 import { stockMovementSchema, type StockMovementFormValues } from "@/pages/stock/stock.schema";
 import type { SparePart } from "@/types/stock";
 
@@ -51,35 +52,24 @@ export function StockMovementDrawer({
     : "Retire de la quantite du stock actuel.";
 
   return (
-    <>
-      <button
-        type="button"
-        className="fixed inset-0 z-40 bg-foreground/30"
-        onClick={onClose}
-        aria-label="Fermer le mouvement"
-      />
-      <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-md border-l border-border bg-surface shadow-panel">
-        <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <div>
-              <h2 className="font-display text-xl font-semibold text-foreground">{title}</h2>
-              <p className="text-sm text-muted-foreground">{helper}</p>
-            </div>
-            <Button type="button" variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+    <ResponsiveSidePanel
+      open={open}
+      onClose={onClose}
+      closeLabel="Fermer le mouvement"
+      title={title}
+      description={helper}
+      maxWidthClassName="md:max-w-md"
+    >
+      <div className="space-y-3">
+        <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
+          <p className="text-xs text-muted-foreground">Piece</p>
+          <p className="text-sm font-semibold text-foreground">
+            {sparePart.reference} - {sparePart.name}
+          </p>
+          <p className="text-xs text-muted-foreground">Stock actuel: {sparePart.quantityInStock}</p>
+        </div>
 
-          <div className="space-y-3 px-5 py-4">
-            <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
-              <p className="text-xs text-muted-foreground">Piece</p>
-              <p className="text-sm font-semibold text-foreground">
-                {sparePart.reference} - {sparePart.name}
-              </p>
-              <p className="text-xs text-muted-foreground">Stock actuel: {sparePart.quantityInStock}</p>
-            </div>
-
-            <form className="ds-form" onSubmit={form.handleSubmit(onSubmit)}>
+        <form className="ds-form" onSubmit={form.handleSubmit(onSubmit)}>
               <FormField htmlFor="quantity" label="Quantite" required error={form.formState.errors.quantity?.message}>
                 <Input
                   id="quantity"
@@ -100,10 +90,8 @@ export function StockMovementDrawer({
                   {loading ? "Validation..." : isStockIn ? "Valider entree" : "Valider sortie"}
                 </Button>
               </div>
-            </form>
-          </div>
-        </div>
-      </aside>
-    </>
+        </form>
+      </div>
+    </ResponsiveSidePanel>
   );
 }

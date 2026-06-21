@@ -45,7 +45,7 @@ export function SparePartTable({
           <TableHead>Seuil min.</TableHead>
           <TableHead>Etat</TableHead>
           <TableHead>Prix unitaire</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="sticky right-0 bg-secondary/95 text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -71,7 +71,7 @@ export function SparePartTable({
               )}
             >
               <TableCell className="font-semibold">{sparePart.reference}</TableCell>
-              <TableCell>
+              <TableCell className="sticky right-0 bg-surface/95">
                 <p className="font-medium text-foreground">{sparePart.name}</p>
                 {sparePart.stockAlert ? <p className="text-xs text-muted-foreground">{sparePart.stockAlert}</p> : null}
               </TableCell>
@@ -94,7 +94,12 @@ export function SparePartTable({
                 <div className="flex justify-end gap-1.5">
                   {canManage ? (
                     <>
-                      <Button variant="ghost" size="sm" onClick={() => onEdit(sparePart)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(sparePart)}
+                        aria-label={`Modifier la piece ${sparePart.reference}`}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
@@ -102,6 +107,7 @@ export function SparePartTable({
                         size="sm"
                         disabled={processingMovementPartId === sparePart.id}
                         onClick={() => onStockIn(sparePart)}
+                        aria-label={`Declarer une entree de stock pour la piece ${sparePart.reference}`}
                       >
                         <ArrowUpCircle className="h-4 w-4 text-success" />
                       </Button>
@@ -110,6 +116,7 @@ export function SparePartTable({
                         size="sm"
                         disabled={processingMovementPartId === sparePart.id}
                         onClick={() => onStockOut(sparePart)}
+                        aria-label={`Declarer une sortie de stock pour la piece ${sparePart.reference}`}
                       >
                         <ArrowDownCircle className="h-4 w-4 text-warning" />
                       </Button>

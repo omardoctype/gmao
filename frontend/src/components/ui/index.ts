@@ -5,6 +5,7 @@ export * from "@/components/ui/form-field";
 export * from "@/components/ui/input";
 export * from "@/components/ui/label";
 export * from "@/components/ui/list-query-controls";
+export * from "@/components/ui/overlay";
 export * from "@/components/ui/page-states";
 export * from "@/components/ui/pagination-controls";
 export * from "@/components/ui/responsive-crud-panel";

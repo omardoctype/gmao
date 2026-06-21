@@ -11,12 +11,13 @@ import {
   Settings,
   ShieldAlert,
   Trash2,
-  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ResponsiveCrudPanel } from "@/components/ui/responsive-crud-panel";
+import { ResponsiveSidePanel } from "@/components/ui/overlay";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/context/toast-context";
 import { useAccessControl } from "@/hooks/use-access-control";
@@ -360,25 +361,14 @@ export function EquipmentDetailsDrawer({ open, loading, equipment, onClose }: Eq
 
   return (
     <>
-      <button
-        type="button"
-        className="fixed inset-0 z-40 bg-foreground/30"
-        aria-label="Fermer le detail"
-        onClick={onClose}
-      />
-      <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-lg border-l border-border bg-surface shadow-panel">
-        <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <div>
-              <h2 className="font-display text-xl font-semibold text-foreground">Detail equipement</h2>
-              <p className="text-sm text-muted-foreground">Fiche technique resumee pour consultation rapide.</p>
-            </div>
-            <Button type="button" variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-5 py-4">
+      <ResponsiveSidePanel
+        open={open}
+        onClose={onClose}
+        closeLabel="Fermer le detail de l'equipement"
+        title="Detail equipement"
+        description="Fiche technique resumee pour consultation rapide."
+        maxWidthClassName="md:max-w-lg"
+      >
             {loading ? (
               <div className="text-sm text-muted-foreground">Chargement...</div>
             ) : equipment ? (
@@ -575,6 +565,7 @@ export function EquipmentDetailsDrawer({ open, loading, equipment, onClose }: Eq
                                       variant="outline"
                                       disabled={openingDocumentId === document.id}
                                       onClick={() => void handleOpenDocument(document)}
+                                      aria-label={`Ouvrir le document ${document.originalFileName}`}
                                     >
                                       {openingDocumentId === document.id ? (
                                         <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -588,6 +579,7 @@ export function EquipmentDetailsDrawer({ open, loading, equipment, onClose }: Eq
                                       variant="outline"
                                       disabled={downloadingDocumentId === document.id}
                                       onClick={() => void handleDownloadDocument(document)}
+                                      aria-label={`Telecharger le document ${document.originalFileName}`}
                                     >
                                       {downloadingDocumentId === document.id ? (
                                         <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -603,6 +595,7 @@ export function EquipmentDetailsDrawer({ open, loading, equipment, onClose }: Eq
                                         className="text-destructive hover:text-destructive"
                                         disabled={deletingDocumentId === document.id}
                                         onClick={() => void handleDeleteDocument(document)}
+                                        aria-label={`Supprimer le document ${document.originalFileName}`}
                                       >
                                         {deletingDocumentId === document.id ? (
                                           <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -625,64 +618,45 @@ export function EquipmentDetailsDrawer({ open, loading, equipment, onClose }: Eq
             ) : (
               <div className="text-sm text-muted-foreground">Aucune donnee disponible.</div>
             )}
-          </div>
-        </div>
-      </aside>
+      </ResponsiveSidePanel>
 
       {previewOpen ? (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 z-[60] bg-foreground/40"
-            aria-label="Fermer la lecture du document"
-            onClick={closePreviewPanel}
-          />
-          <section className="fixed inset-0 z-[70] flex items-end justify-stretch p-0 md:items-center md:justify-center md:p-6">
-            <div className="flex h-[92dvh] w-full flex-col rounded-t-2xl border border-border bg-surface shadow-panel md:h-auto md:max-h-[90dvh] md:max-w-5xl md:rounded-2xl">
-              <header className="flex items-start justify-between gap-3 border-b border-border px-4 py-4 md:px-6">
-                <div className="min-w-0">
-                  <h3 className="font-display text-lg font-semibold text-foreground">
-                    {previewDocument ? `Lecture document - ${previewDocument.originalFileName}` : "Lecture document"}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">Apercu texte/markdown du document attache.</p>
-                </div>
-                <Button type="button" variant="ghost" size="icon" onClick={closePreviewPanel} aria-label="Fermer la lecture">
-                  <X className="h-4 w-4" />
-                </Button>
-              </header>
-
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
-                {previewLoading ? (
-                  <Card className="border-border/90 bg-surface">
-                    <CardContent className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-                      <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
-                      Chargement du contenu...
-                    </CardContent>
-                  </Card>
-                ) : previewError ? (
-                  <Card className="border-destructive/30 bg-destructive/10">
-                    <CardContent className="space-y-3 p-4">
-                      <p className="text-sm text-destructive">{previewError}</p>
-                      {previewDocument ? (
-                        <Button type="button" size="sm" variant="outline" onClick={() => void handleOpenDocument(previewDocument)}>
-                          Reessayer
-                        </Button>
-                      ) : null}
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card className="border-border/90 bg-surface">
-                    <CardContent className="p-4">
-                      <pre className="max-h-[68dvh] overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-surface-elevated p-4 text-sm leading-relaxed text-foreground">
-                        {previewContent || "Document vide."}
-                      </pre>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </div>
-          </section>
-        </>
+        <ResponsiveCrudPanel
+          open={previewOpen}
+          onClose={closePreviewPanel}
+          closeLabel="Fermer la lecture du document"
+          title={previewDocument ? `Lecture document - ${previewDocument.originalFileName}` : "Lecture document"}
+          description="Apercu texte/markdown du document attache."
+          maxWidthClassName="md:max-w-5xl"
+        >
+          {previewLoading ? (
+            <Card className="border-border/90 bg-surface">
+              <CardContent className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
+                <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
+                Chargement du contenu...
+              </CardContent>
+            </Card>
+          ) : previewError ? (
+            <Card className="border-destructive/30 bg-destructive/10">
+              <CardContent className="space-y-3 p-4">
+                <p className="text-sm text-destructive">{previewError}</p>
+                {previewDocument ? (
+                  <Button type="button" size="sm" variant="outline" onClick={() => void handleOpenDocument(previewDocument)}>
+                    Reessayer
+                  </Button>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-border/90 bg-surface">
+              <CardContent className="p-4">
+                <pre className="max-h-[68dvh] overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-surface-elevated p-4 text-sm leading-relaxed text-foreground">
+                  {previewContent || "Document vide."}
+                </pre>
+              </CardContent>
+            </Card>
+          )}
+        </ResponsiveCrudPanel>
       ) : null}
     </>
   );

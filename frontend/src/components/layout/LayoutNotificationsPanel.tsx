@@ -3,6 +3,7 @@ import { Bell, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NotificationList } from "@/components/notifications";
 import { Button } from "@/components/ui/button";
+import { AnchoredPopover } from "@/components/ui/overlay";
 import { useToast } from "@/context/toast-context";
 import { cn } from "@/lib/utils";
 import { routePaths } from "@/routes/route-paths";
@@ -20,7 +21,7 @@ export function LayoutNotificationsPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [markingNotificationId, setMarkingNotificationId] = useState<number | null>(null);
-  const panelRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const toast = useToast();
 
   async function refreshUnreadCount() {
@@ -86,20 +87,18 @@ export function LayoutNotificationsPanel() {
     void refreshNotifications(mode);
   }, [open, mode]);
 
-  useEffect(() => {
-    const onClickOutside = (event: MouseEvent) => {
-      if (!panelRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, []);
-
   return (
-    <div className="relative" ref={panelRef}>
-      <Button variant="outline" size="icon" className="relative h-11 w-11" onClick={() => setOpen((prev) => !prev)}>
+    <div>
+      <Button
+        ref={triggerRef}
+        variant="outline"
+        size="icon"
+        className="relative h-11 w-11"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-label="Ouvrir les notifications"
+      >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 ? (
           <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-semibold text-destructive-foreground">
@@ -108,71 +107,75 @@ export function LayoutNotificationsPanel() {
         ) : null}
       </Button>
 
-      {open ? (
-        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(92vw,26rem)] rounded-xl border border-border bg-card p-3 shadow-panel">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold text-foreground">Notifications</p>
-              <p className="text-xs text-muted-foreground">{unreadCount} non lue(s)</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2"
-                onClick={() => {
-                  void refreshNotifications(mode);
-                  void refreshUnreadCount();
-                }}
-              >
-                <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+      <AnchoredPopover
+        open={open}
+        anchorRef={triggerRef}
+        onClose={() => setOpen(false)}
+        className="w-[min(92vw,26rem)] rounded-xl p-3"
+      >
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Notifications</p>
+            <p className="text-xs text-muted-foreground">{unreadCount} non lue(s)</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2"
+              onClick={() => {
+                void refreshNotifications(mode);
+                void refreshUnreadCount();
+              }}
+              aria-label="Actualiser les notifications"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+            </Button>
+            <Link to={routePaths.notifications} onClick={() => setOpen(false)}>
+              <Button variant="outline" size="sm" className="h-8 px-2.5">
+                Ouvrir
               </Button>
-              <Link to={routePaths.notifications} onClick={() => setOpen(false)}>
-                <Button variant="outline" size="sm" className="h-8 px-2.5">
-                  Ouvrir
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="mb-3 flex items-center gap-2">
-            <Button
-              variant={mode === "UNREAD" ? "default" : "outline"}
-              size="sm"
-              className="h-8"
-              onClick={() => setMode("UNREAD")}
-            >
-              Non lues
-            </Button>
-            <Button
-              variant={mode === "ALL" ? "default" : "outline"}
-              size="sm"
-              className="h-8"
-              onClick={() => setMode("ALL")}
-            >
-              Toutes
-            </Button>
-          </div>
-
-          <div className="max-h-[24rem] overflow-y-auto pr-1">
-            {error ? (
-              <p className="text-sm text-destructive">{error}</p>
-            ) : loading ? (
-              <p className="text-sm text-muted-foreground">Chargement des notifications...</p>
-            ) : (
-              <NotificationList
-                notifications={notifications}
-                markingNotificationId={markingNotificationId}
-                onMarkAsRead={handleMarkAsRead}
-                compact
-                emptyMessage={
-                  mode === "UNREAD" ? "Aucune notification non lue pour le moment." : "Aucune notification trouvee."
-                }
-              />
-            )}
+            </Link>
           </div>
         </div>
-      ) : null}
+
+        <div className="mb-3 flex items-center gap-2">
+          <Button
+            variant={mode === "UNREAD" ? "default" : "outline"}
+            size="sm"
+            className="h-8"
+            onClick={() => setMode("UNREAD")}
+          >
+            Non lues
+          </Button>
+          <Button
+            variant={mode === "ALL" ? "default" : "outline"}
+            size="sm"
+            className="h-8"
+            onClick={() => setMode("ALL")}
+          >
+            Toutes
+          </Button>
+        </div>
+
+        <div className="max-h-[24rem] overflow-y-auto pr-1">
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : loading ? (
+            <p className="text-sm text-muted-foreground">Chargement des notifications...</p>
+          ) : (
+            <NotificationList
+              notifications={notifications}
+              markingNotificationId={markingNotificationId}
+              onMarkAsRead={handleMarkAsRead}
+              compact
+              emptyMessage={
+                mode === "UNREAD" ? "Aucune notification non lue pour le moment." : "Aucune notification trouvee."
+              }
+            />
+          )}
+        </div>
+      </AnchoredPopover>
     </div>
   );
 }

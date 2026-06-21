@@ -1,4 +1,4 @@
-import { Brain, CalendarClock, FileWarning, Gauge, X } from "lucide-react";
+import { Brain, CalendarClock, FileWarning, Gauge } from "lucide-react";
 import {
   BreakdownPriorityBadge,
   BreakdownStatusBadge,
@@ -6,6 +6,7 @@ import {
 } from "@/components/breakdowns/BreakdownBadges";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ResponsiveSidePanel } from "@/components/ui/overlay";
 import type { Breakdown } from "@/types/breakdown";
 
 interface BreakdownDetailsDrawerProps {
@@ -42,25 +43,18 @@ export function BreakdownDetailsDrawer({
   }
 
   return (
-    <>
-      <button type="button" className="fixed inset-0 z-40 bg-foreground/30" onClick={onClose} aria-label="Fermer le detail" />
-      <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-lg border-l border-border bg-surface shadow-panel">
-        <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <div>
-              <h2 className="font-display text-xl font-semibold text-foreground">Detail panne</h2>
-              <p className="text-sm text-muted-foreground">Visualisation complete pour qualification et suivi.</p>
-            </div>
-            <Button type="button" variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-5 py-4">
-            {loading ? (
-              <div className="text-sm text-muted-foreground">Chargement...</div>
-            ) : breakdown ? (
-              <div className="space-y-4">
+    <ResponsiveSidePanel
+      open={open}
+      onClose={onClose}
+      closeLabel="Fermer le detail de la panne"
+      title="Detail panne"
+      description="Visualisation complete pour qualification et suivi."
+      maxWidthClassName="md:max-w-lg"
+    >
+      {loading ? (
+        <div className="text-sm text-muted-foreground">Chargement...</div>
+      ) : breakdown ? (
+        <div className="space-y-4">
                 <Card className="border-border/90">
                   <CardContent className="space-y-2 p-4">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">Identification</p>
@@ -104,14 +98,11 @@ export function BreakdownDetailsDrawer({
                     </CardContent>
                   </Card>
                 ) : null}
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">Aucune donnee disponible.</div>
-            )}
-          </div>
         </div>
-      </aside>
-    </>
+      ) : (
+        <div className="text-sm text-muted-foreground">Aucune donnee disponible.</div>
+      )}
+    </ResponsiveSidePanel>
   );
 }
 

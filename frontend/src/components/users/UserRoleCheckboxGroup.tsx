@@ -1,16 +1,27 @@
+import type { HTMLAttributes } from "react";
 import { USER_ROLE_OPTIONS } from "@/components/users/user-roles";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types/user";
 
-interface UserRoleCheckboxGroupProps {
+interface UserRoleCheckboxGroupProps extends HTMLAttributes<HTMLDivElement> {
   selectedRoles: UserRole[];
   onToggleRole: (role: UserRole, checked: boolean) => void;
   error?: string;
 }
 
-export function UserRoleCheckboxGroup({ selectedRoles, onToggleRole, error }: UserRoleCheckboxGroupProps) {
+export function UserRoleCheckboxGroup({
+  selectedRoles,
+  onToggleRole,
+  error,
+  className,
+  ...props
+}: UserRoleCheckboxGroupProps) {
   return (
-    <div className={cn("rounded-lg border border-border/80 bg-surface-elevated p-3", error && "border-destructive/40")}>
+    <div
+      role="group"
+      className={cn("rounded-lg border border-border/80 bg-surface-elevated p-3", error && "border-destructive/40", className)}
+      {...props}
+    >
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {USER_ROLE_OPTIONS.map((roleOption) => {
           const isChecked = selectedRoles.includes(roleOption.value);
@@ -30,7 +41,6 @@ export function UserRoleCheckboxGroup({ selectedRoles, onToggleRole, error }: Us
           );
         })}
       </div>
-      {error ? <p className="mt-2 text-xs font-medium text-destructive">{error}</p> : null}
     </div>
   );
 }

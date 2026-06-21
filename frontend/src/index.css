@@ -48,6 +48,13 @@
     --chart-4: 35 86% 45%;
 
     --radius: 0.75rem;
+    --z-sticky: 20;
+    --z-mobile-sidebar-backdrop: 30;
+    --z-mobile-sidebar: 40;
+    --z-popover: 50;
+    --z-dialog-backdrop: 60;
+    --z-dialog: 61;
+    --z-toast: 70;
   }
 
   .dark {
@@ -195,5 +202,35 @@
 
   .ds-table td {
     @apply border-t px-3 py-3 align-middle text-foreground;
+  }
+}
+
+@layer utilities {
+  .z-layer-sticky {
+    z-index: var(--z-sticky);
+  }
+
+  .z-layer-mobile-sidebar {
+    z-index: var(--z-mobile-sidebar);
+  }
+
+  .z-layer-mobile-sidebar-backdrop {
+    z-index: var(--z-mobile-sidebar-backdrop);
+  }
+
+  .z-layer-popover {
+    z-index: var(--z-popover);
+  }
+
+  .z-layer-dialog-backdrop {
+    z-index: var(--z-dialog-backdrop);
+  }
+
+  .z-layer-dialog {
+    z-index: var(--z-dialog);
+  }
+
+  .z-layer-toast {
+    z-index: var(--z-toast);
   }
 }

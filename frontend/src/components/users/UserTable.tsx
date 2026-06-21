@@ -23,13 +23,13 @@ export function UserTable({ users, canManage, deletingUserId, onEdit, onAssignRo
           <TableHead>Email</TableHead>
           <TableHead>Roles</TableHead>
           <TableHead>Actif</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="sticky right-0 bg-secondary/95 text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {users.map((user) => (
           <TableRow key={user.id}>
-            <TableCell>
+            <TableCell className="sticky right-0 bg-surface/95">
               <p className="font-medium text-foreground">
                 {user.firstName} {user.lastName}
               </p>
@@ -48,7 +48,7 @@ export function UserTable({ users, canManage, deletingUserId, onEdit, onAssignRo
                   size="icon"
                   disabled={!canManage}
                   onClick={() => onEdit(user)}
-                  aria-label="Modifier utilisateur"
+                  aria-label={`Modifier l'utilisateur ${user.email}`}
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -57,7 +57,7 @@ export function UserTable({ users, canManage, deletingUserId, onEdit, onAssignRo
                   size="icon"
                   disabled={!canManage}
                   onClick={() => onAssignRoles(user)}
-                  aria-label="Assigner roles"
+                  aria-label={`Assigner les roles de l'utilisateur ${user.email}`}
                 >
                   <ShieldCheck className="h-4 w-4 text-primary" />
                 </Button>
@@ -66,7 +66,7 @@ export function UserTable({ users, canManage, deletingUserId, onEdit, onAssignRo
                   size="icon"
                   disabled={!canManage || deletingUserId === user.id}
                   onClick={() => onDelete(user)}
-                  aria-label="Supprimer utilisateur"
+                  aria-label={`Supprimer l'utilisateur ${user.email}`}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>

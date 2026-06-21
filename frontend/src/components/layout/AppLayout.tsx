@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Outlet } from "react-router-dom";
 import { LayoutSidebar } from "@/components/layout/LayoutSidebar";
 import { LayoutTopbar } from "@/components/layout/LayoutTopbar";
 import { useAppContext } from "@/context/app-context";
@@ -14,7 +14,6 @@ export function AppLayout() {
   const { appName } = useAppContext();
   const { hasAnyRole, roles } = useAccessControl();
   const isMobile = useMobile();
-  const location = useLocation();
 
   const allowedNavigationItems = useMemo(() => {
     return resolveNavigationItemsByRoles(roles).filter((item) => {
@@ -25,16 +24,6 @@ export function AppLayout() {
       return hasAnyRole(item.allowedRoles);
     });
   }, [hasAnyRole, roles]);
-
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (!isMobile) {
-      setMobileMenuOpen(false);
-    }
-  }, [isMobile]);
 
   return (
     <div className="min-h-screen">
@@ -47,7 +36,7 @@ export function AppLayout() {
         <LayoutSidebar
           appName={appName}
           collapsed={sidebarCollapsed}
-          mobileOpen={mobileMenuOpen}
+          mobileOpen={mobileMenuOpen && isMobile}
           navigationItems={allowedNavigationItems}
           onCloseMobile={() => setMobileMenuOpen(false)}
         />
@@ -66,7 +55,7 @@ export function AppLayout() {
 
       {mobileMenuOpen && isMobile ? (
         <button
-          className="fixed inset-0 z-30 bg-foreground/30 lg:hidden"
+          className="fixed inset-0 z-layer-mobile-sidebar-backdrop bg-foreground/30 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
           aria-label="Fermer le menu"
         />

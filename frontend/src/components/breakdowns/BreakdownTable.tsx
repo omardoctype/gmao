@@ -48,14 +48,14 @@ export function BreakdownTable({
           <TableHead>Priorite</TableHead>
           <TableHead>Statut</TableHead>
           <TableHead>Declaree le</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="sticky right-0 bg-secondary/95 text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {breakdowns.map((breakdown) => (
           <TableRow key={breakdown.id}>
             <TableCell className="font-semibold">{breakdown.reference}</TableCell>
-            <TableCell>
+            <TableCell className="sticky right-0 bg-surface/95">
               <p className="font-medium text-foreground">{breakdown.title}</p>
               <p className="line-clamp-1 text-xs text-muted-foreground">{breakdown.description}</p>
             </TableCell>
@@ -75,7 +75,12 @@ export function BreakdownTable({
             <TableCell>{formatDeclaredAt(breakdown.declaredAt)}</TableCell>
             <TableCell>
               <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" onClick={() => onView(breakdown)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onView(breakdown)}
+                  aria-label={`Voir les details de la panne ${breakdown.reference}`}
+                >
                   <Eye className="h-4 w-4" />
                 </Button>
                 {canAiDiagnosis ? (
@@ -83,7 +88,7 @@ export function BreakdownTable({
                     variant="ghost"
                     size="sm"
                     title="Diagnostic IA"
-                    aria-label="Diagnostic IA"
+                    aria-label={`Diagnostic IA pour la panne ${breakdown.reference}`}
                     onClick={() => onAiDiagnosis(breakdown)}
                   >
                     <Brain className="h-4 w-4" />
@@ -91,7 +96,12 @@ export function BreakdownTable({
                 ) : null}
                 {canManage ? (
                   <>
-                    <Button variant="ghost" size="sm" onClick={() => onEdit(breakdown)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(breakdown)}
+                      aria-label={`Modifier la panne ${breakdown.reference}`}
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
@@ -99,6 +109,7 @@ export function BreakdownTable({
                       size="sm"
                       disabled={updatingStatusBreakdownId === breakdown.id}
                       onClick={() => onStatusChange(breakdown)}
+                      aria-label={`Changer le statut de la panne ${breakdown.reference}`}
                     >
                       <RotateCcw className="h-4 w-4" />
                     </Button>

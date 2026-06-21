@@ -1,8 +1,10 @@
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useId } from "react";
 import { X } from "lucide-react";
 import { useMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { OverlayPortal } from "@/components/ui/overlay";
+import { useModalOverlay } from "@/components/ui/overlay-hooks";
 
 interface ResponsiveCrudPanelProps {
   open: boolean;
@@ -32,41 +34,38 @@ export function ResponsiveCrudPanel({
   children,
 }: ResponsiveCrudPanelProps) {
   const isMobile = useMobile();
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+  const titleId = useId();
+  const descriptionId = useId();
+  const panelRef = useModalOverlay<HTMLElement>({ open, onClose });
 
   if (!open) {
     return null;
   }
 
   return (
-    <>
-      <button type="button" className="fixed inset-0 z-40 bg-foreground/35 backdrop-blur-[1px]" onClick={onClose} aria-label={closeLabel} />
+    <OverlayPortal>
+      <button
+        type="button"
+        className="fixed inset-0 z-layer-dialog-backdrop bg-foreground/35 backdrop-blur-[1px]"
+        onClick={onClose}
+        aria-label={closeLabel}
+      />
 
       <div
         className={cn(
-          "fixed inset-0 z-50 flex",
+          "fixed inset-0 z-layer-dialog flex",
           isMobile ? "items-end justify-stretch p-0" : "items-center justify-center p-4 md:p-6",
         )}
       >
         <section
+          ref={panelRef}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
+          aria-labelledby={titleId}
+          aria-describedby={description ? descriptionId : undefined}
           className={cn(
-            "flex w-full flex-col border border-border bg-surface shadow-panel",
+            "flex w-full flex-col border border-border bg-surface shadow-panel outline-none",
             maxWidthClassName,
             isMobile ? "h-[92dvh] rounded-t-2xl" : "max-h-[90dvh] rounded-2xl",
             panelClassName,
@@ -74,8 +73,14 @@ export function ResponsiveCrudPanel({
         >
           <header className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-4 py-4 md:px-6 md:py-5">
             <div className="min-w-0">
-              <h2 className="font-display text-xl font-semibold text-foreground">{title}</h2>
-              {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+              <h2 id={titleId} className="font-display text-xl font-semibold text-foreground">
+                {title}
+              </h2>
+              {description ? (
+                <p id={descriptionId} className="mt-1 text-sm text-muted-foreground">
+                  {description}
+                </p>
+              ) : null}
             </div>
 
             <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label={closeLabel}>
@@ -94,6 +99,6 @@ export function ResponsiveCrudPanel({
           </div>
         </section>
       </div>
-    </>
+    </OverlayPortal>
   );
 }

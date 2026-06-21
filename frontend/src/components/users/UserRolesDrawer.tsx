@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoaderCircle, ShieldCheck, X } from "lucide-react";
+import { LoaderCircle, ShieldCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { UserRoleCheckboxGroup } from "@/components/users/UserRoleCheckboxGroup";
 import { UserRoleBadges } from "@/components/users/UserRoleBadges";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
+import { ResponsiveSidePanel } from "@/components/ui/overlay";
 import { userRoleAssignSchema, type UserRoleAssignFormValues } from "@/pages/users/user.schema";
 import type { UserItem, UserRole } from "@/types/user";
 
@@ -56,29 +57,15 @@ export function UserRolesDrawer({ open, user, submitting, onClose, onSubmit }: U
   };
 
   return (
-    <>
-      <button
-        type="button"
-        className="fixed inset-0 z-40 bg-foreground/30"
-        aria-label="Fermer le panneau des roles"
-        onClick={onClose}
-      />
-      <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-lg border-l border-border bg-surface shadow-panel">
-        <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <div>
-              <h2 className="font-display text-xl font-semibold text-foreground">Assigner les roles</h2>
-              <p className="text-sm text-muted-foreground">
-                {user.firstName} {user.lastName} - {user.email}
-              </p>
-            </div>
-            <Button type="button" variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-5 py-4">
-            <form className="ds-form" onSubmit={form.handleSubmit(onSubmit)}>
+    <ResponsiveSidePanel
+      open={open}
+      onClose={onClose}
+      closeLabel="Fermer le panneau des roles"
+      title="Assigner les roles"
+      description={`${user.firstName} ${user.lastName} - ${user.email}`}
+      maxWidthClassName="md:max-w-lg"
+    >
+      <form className="ds-form" onSubmit={form.handleSubmit(onSubmit)}>
               <div className="rounded-lg border border-border/80 bg-surface-elevated p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Roles actuels</p>
                 <div className="mt-2">
@@ -115,10 +102,7 @@ export function UserRolesDrawer({ open, user, submitting, onClose, onSubmit }: U
                   )}
                 </Button>
               </div>
-            </form>
-          </div>
-        </div>
-      </aside>
-    </>
+      </form>
+    </ResponsiveSidePanel>
   );
 }

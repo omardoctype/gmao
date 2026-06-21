@@ -39,7 +39,7 @@ function toneConfig(type: ToastType): { icon: LucideIcon; className: string } {
 
 export function ToastStack({ toasts, onDismiss }: ToastStackProps) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex justify-center px-4 sm:inset-x-auto sm:right-4 sm:top-5 sm:w-[380px] sm:justify-end sm:px-0">
+    <div className="pointer-events-none fixed inset-x-0 top-4 z-layer-toast flex justify-center px-4 sm:inset-x-auto sm:right-4 sm:top-5 sm:w-[380px] sm:justify-end sm:px-0">
       <div className="flex w-full max-w-md flex-col gap-2">
         {toasts.map((toast) => {
           const { icon: Icon, className } = toneConfig(toast.type);

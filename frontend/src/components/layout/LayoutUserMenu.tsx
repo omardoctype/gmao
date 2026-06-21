@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ChevronDown, LogOut, UserCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { LayoutNotificationsPanel } from "@/components/layout/LayoutNotificationsPanel";
 import { Button } from "@/components/ui/button";
+import { AnchoredPopover } from "@/components/ui/overlay";
 import { useAuthContext } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
 import { cn } from "@/lib/utils";
@@ -51,21 +52,10 @@ function getDisplayName(firstName?: string, lastName?: string, email?: string): 
 
 export function LayoutUserMenu() {
   const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const { logout, user } = useAuthContext();
   const toast = useToast();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const onClickOutside = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, []);
 
   const handleLogout = () => {
     logout();
@@ -88,8 +78,17 @@ export function LayoutUserMenu() {
     <div className="flex items-center gap-2">
       <LayoutNotificationsPanel />
 
-      <div className="relative" ref={menuRef}>
-        <Button variant="outline" size="sm" className="h-11 gap-2 px-2.5" onClick={() => setOpen((prev) => !prev)}>
+      <div>
+        <Button
+          ref={triggerRef}
+          variant="outline"
+          size="sm"
+          className="h-11 gap-2 px-2.5"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-expanded={open}
+          aria-haspopup="menu"
+          aria-label="Ouvrir le menu utilisateur"
+        >
           <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
             {userInitials}
           </span>
@@ -100,29 +99,31 @@ export function LayoutUserMenu() {
           <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
         </Button>
 
-        {open ? (
-          <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 min-w-56 rounded-lg border bg-card p-2 shadow-panel">
-            <div className="mb-1 rounded-md border border-border/80 bg-surface-elevated px-3 py-2">
-              <p className="truncate text-xs font-semibold text-foreground">{displayName}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{user?.email ?? "Email non renseigne"}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{rolesLabel}</p>
-            </div>
-            <button
-              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-foreground hover:bg-muted/60"
-              onClick={handleGoToProfile}
-            >
-              <UserCircle2 className="h-4 w-4 text-muted-foreground" />
-              Mon profil
-            </button>
-            <button
-              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted/60"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4" />
-              Deconnexion
-            </button>
+        <AnchoredPopover open={open} anchorRef={triggerRef} onClose={() => setOpen(false)} role="menu" className="min-w-56 p-2">
+          <div className="mb-1 rounded-md border border-border/80 bg-surface-elevated px-3 py-2">
+            <p className="truncate text-xs font-semibold text-foreground">{displayName}</p>
+            <p className="truncate text-[11px] text-muted-foreground">{user?.email ?? "Email non renseigne"}</p>
+            <p className="truncate text-[11px] text-muted-foreground">{rolesLabel}</p>
           </div>
-        ) : null}
+          <button
+            type="button"
+            role="menuitem"
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-foreground hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={handleGoToProfile}
+          >
+            <UserCircle2 className="h-4 w-4 text-muted-foreground" />
+            Mon profil
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4" />
+            Deconnexion
+          </button>
+        </AnchoredPopover>
       </div>
     </div>
   );

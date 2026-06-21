@@ -22,7 +22,7 @@ export function LayoutSidebar({
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-40 w-72 border-r border-border/80 bg-sidebar/95 p-4 text-sidebar-foreground shadow-panel backdrop-blur transition-transform duration-300 lg:relative lg:w-auto lg:translate-x-0 lg:shadow-none",
+        "fixed inset-y-0 left-0 z-layer-mobile-sidebar w-72 border-r border-border/80 bg-sidebar/95 p-4 text-sidebar-foreground shadow-panel backdrop-blur transition-transform duration-300 lg:relative lg:w-auto lg:translate-x-0 lg:shadow-none",
         mobileOpen ? "translate-x-0" : "-translate-x-full",
       )}
     >

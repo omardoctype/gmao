@@ -58,14 +58,14 @@ export function WorkOrderTable({
           <TableHead>Statut</TableHead>
           <TableHead>Technicien</TableHead>
           <TableHead>Date planifiee</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="sticky right-0 bg-secondary/95 text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {workOrders.map((workOrder) => (
           <TableRow key={workOrder.id}>
             <TableCell className="font-semibold">{workOrder.reference}</TableCell>
-            <TableCell>
+            <TableCell className="sticky right-0 bg-surface/95">
               <p className="text-sm text-foreground">{workOrder.equipmentCode}</p>
               <p className="text-xs text-muted-foreground">{workOrder.equipmentName}</p>
             </TableCell>
@@ -83,15 +83,30 @@ export function WorkOrderTable({
             <TableCell>{formatDateTime(workOrder.plannedDate)}</TableCell>
             <TableCell>
               <div className="flex justify-end gap-1.5">
-                <Button variant="ghost" size="sm" onClick={() => onView(workOrder)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onView(workOrder)}
+                  aria-label={`Voir les details de l'ordre de travail ${workOrder.reference}`}
+                >
                   <Eye className="h-4 w-4" />
                 </Button>
                 {canManage ? (
                   <>
-                    <Button variant="ghost" size="sm" onClick={() => onEdit(workOrder)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(workOrder)}
+                      aria-label={`Modifier l'ordre de travail ${workOrder.reference}`}
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => onAssign(workOrder)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onAssign(workOrder)}
+                      aria-label={`Affecter un technicien a l'ordre de travail ${workOrder.reference}`}
+                    >
                       <UserRoundPlus className="h-4 w-4" />
                     </Button>
                   </>
@@ -102,6 +117,7 @@ export function WorkOrderTable({
                     size="sm"
                     disabled={processingActionWorkOrderId === workOrder.id || workOrder.status !== "ASSIGNED"}
                     onClick={() => onStart(workOrder)}
+                    aria-label={`Demarrer l'ordre de travail ${workOrder.reference}`}
                   >
                     <Play className="h-4 w-4" />
                   </Button>
@@ -113,6 +129,7 @@ export function WorkOrderTable({
                     title="Cloturer avec rapport"
                     disabled={processingActionWorkOrderId === workOrder.id || workOrder.status !== "IN_PROGRESS"}
                     onClick={() => onClose(workOrder)}
+                    aria-label={`Cloturer l'ordre de travail ${workOrder.reference} avec rapport`}
                   >
                     <CheckCircle2 className="h-4 w-4" />
                   </Button>

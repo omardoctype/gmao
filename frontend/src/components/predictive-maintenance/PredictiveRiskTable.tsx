@@ -42,7 +42,7 @@ export function PredictiveRiskTable({
           <TableHead>Risk Score</TableHead>
           <TableHead>Risk Level</TableHead>
           <TableHead>Action recommandee</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="sticky right-0 bg-secondary/95 text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -58,7 +58,7 @@ export function PredictiveRiskTable({
               </TableCell>
               <TableCell>{equipment.category}</TableCell>
               <TableCell>{equipment.location || "-"}</TableCell>
-              <TableCell>
+              <TableCell className="sticky right-0 bg-surface/95">
                 <EquipmentCriticalityBadge criticality={equipment.criticality} />
               </TableCell>
               <TableCell>
@@ -85,6 +85,7 @@ export function PredictiveRiskTable({
                     onClick={() => onViewRiskDetail(equipment)}
                     disabled={isViewing}
                     title="Voir le detail du risque"
+                    aria-label={`Voir le detail du risque pour l'equipement ${equipment.equipmentCode}`}
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
@@ -96,6 +97,7 @@ export function PredictiveRiskTable({
                     onClick={() => onAnalyzeWithAi(equipment)}
                     disabled={!canAnalyzeWithAi || isAnalyzingAny}
                     title={canAnalyzeWithAi ? "Analyser avec IA" : "Analyse IA indisponible"}
+                    aria-label={`Analyser avec IA l'equipement ${equipment.equipmentCode}`}
                   >
                     <Bot className={cn("h-4 w-4", isAnalyzing && "animate-pulse")} />
                     <span>{isAnalyzing ? "Analyse..." : "Analyser avec IA"}</span>
@@ -106,6 +108,7 @@ export function PredictiveRiskTable({
                     size="sm"
                     disabled
                     title="Creation OT preventif disponible prochainement"
+                    aria-label={`Creation d'un ordre preventif pour l'equipement ${equipment.equipmentCode} indisponible`}
                   >
                     <Hammer className="h-4 w-4" />
                   </Button>

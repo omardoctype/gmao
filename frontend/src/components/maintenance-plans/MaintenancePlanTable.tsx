@@ -68,13 +68,13 @@ export function MaintenancePlanTable({
           <TableHead>Prochaine execution</TableHead>
           <TableHead>Equipement</TableHead>
           <TableHead>Description</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="sticky right-0 bg-secondary/95 text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {maintenancePlans.map((maintenancePlan) => (
           <TableRow key={maintenancePlan.id}>
-            <TableCell>
+            <TableCell className="sticky right-0 bg-surface/95">
               <MaintenancePlanTypeBadge type={maintenancePlan.type} />
             </TableCell>
             <TableCell>
@@ -95,7 +95,12 @@ export function MaintenancePlanTable({
               <div className="flex justify-end gap-2">
                 {canManage ? (
                   <>
-                    <Button variant="ghost" size="sm" onClick={() => onEdit(maintenancePlan)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(maintenancePlan)}
+                      aria-label={`Modifier le plan de maintenance de l'equipement ${maintenancePlan.equipmentCode}`}
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
@@ -103,6 +108,7 @@ export function MaintenancePlanTable({
                       size="sm"
                       disabled={deletingMaintenancePlanId === maintenancePlan.id}
                       onClick={() => onDelete(maintenancePlan)}
+                      aria-label={`Supprimer le plan de maintenance de l'equipement ${maintenancePlan.equipmentCode}`}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>

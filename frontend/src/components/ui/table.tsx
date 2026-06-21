@@ -3,7 +3,12 @@ import { cn } from "@/lib/utils";
 
 const Table = React.forwardRef<HTMLTableElement, React.TableHTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
-    <div className="w-full overflow-x-auto rounded-md border">
+    <div
+      className="w-full overflow-x-auto rounded-md border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      role="region"
+      aria-label="Tableau avec defilement horizontal"
+      tabIndex={0}
+    >
       <table ref={ref} className={cn("w-full min-w-[680px] text-sm", className)} {...props} />
     </div>
   ),

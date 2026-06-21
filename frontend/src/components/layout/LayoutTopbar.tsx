@@ -27,13 +27,25 @@ export function LayoutTopbar({ sidebarCollapsed, onOpenMobileMenu, onToggleColla
   const displayName = getTopbarDisplayName(user?.firstName, user?.lastName, user?.email);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-background/90 px-4 py-3 backdrop-blur md:px-6">
+    <header className="sticky top-0 z-layer-sticky border-b border-border bg-background/90 px-4 py-3 backdrop-blur md:px-6">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <Button variant="outline" size="icon" className="h-11 w-11 lg:hidden" onClick={onOpenMobileMenu}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-11 w-11 lg:hidden"
+            onClick={onOpenMobileMenu}
+            aria-label="Ouvrir le menu mobile"
+          >
             <Menu className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="hidden lg:inline-flex" onClick={onToggleCollapse}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden lg:inline-flex"
+            onClick={onToggleCollapse}
+            aria-label={sidebarCollapsed ? "Agrandir la barre laterale" : "Reduire la barre laterale"}
+          >
             {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
           </Button>
 

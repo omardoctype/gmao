@@ -1,6 +1,6 @@
-import { CalendarClock, FileCog, Gauge, ReceiptText, UserRound, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { CalendarClock, FileCog, Gauge, ReceiptText, UserRound } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { ResponsiveSidePanel } from "@/components/ui/overlay";
 import {
   WorkOrderPriorityBadge,
   WorkOrderStatusBadge,
@@ -43,25 +43,18 @@ export function WorkOrderDetailsDrawer({ open, loading, workOrder, onClose }: Wo
   }
 
   return (
-    <>
-      <button type="button" className="fixed inset-0 z-40 bg-foreground/30" onClick={onClose} aria-label="Fermer le detail" />
-      <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-xl border-l border-border bg-surface shadow-panel">
-        <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <div>
-              <h2 className="font-display text-xl font-semibold text-foreground">Detail ordre de travail</h2>
-              <p className="text-sm text-muted-foreground">Vue complete de suivi et d'execution.</p>
-            </div>
-            <Button type="button" variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-5 py-4">
-            {loading ? (
-              <div className="text-sm text-muted-foreground">Chargement...</div>
-            ) : workOrder ? (
-              <div className="space-y-4">
+    <ResponsiveSidePanel
+      open={open}
+      onClose={onClose}
+      closeLabel="Fermer le detail de l'ordre de travail"
+      title="Detail ordre de travail"
+      description="Vue complete de suivi et d'execution."
+      maxWidthClassName="md:max-w-xl"
+    >
+      {loading ? (
+        <div className="text-sm text-muted-foreground">Chargement...</div>
+      ) : workOrder ? (
+        <div className="space-y-4">
                 <Card className="border-border/90">
                   <CardContent className="space-y-2 p-4">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">Identification</p>
@@ -102,14 +95,11 @@ export function WorkOrderDetailsDrawer({ open, loading, workOrder, onClose }: Wo
                     <InfoLine icon={ReceiptText} label="Cout reel" value={formatCost(workOrder.realCost)} />
                   </CardContent>
                 </Card>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">Aucune donnee disponible.</div>
-            )}
-          </div>
         </div>
-      </aside>
-    </>
+      ) : (
+        <div className="text-sm text-muted-foreground">Aucune donnee disponible.</div>
+      )}
+    </ResponsiveSidePanel>
   );
 }
 
