@@ -1,4 +1,5 @@
 import { Brain, CalendarClock, FileWarning, Gauge } from "lucide-react";
+import { AttachmentSection } from "@/components/attachments";
 import {
   BreakdownPriorityBadge,
   BreakdownStatusBadge,
@@ -7,6 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ResponsiveSidePanel } from "@/components/ui/overlay";
+import { useAccessControl } from "@/hooks/use-access-control";
+import type { AttachmentCategoryOption } from "@/types/attachment";
 import type { Breakdown } from "@/types/breakdown";
 
 interface BreakdownDetailsDrawerProps {
@@ -17,6 +20,11 @@ interface BreakdownDetailsDrawerProps {
   onAiDiagnosis?: (breakdown: Breakdown) => void;
   onClose: () => void;
 }
+
+const BREAKDOWN_ATTACHMENT_CATEGORY_OPTIONS: AttachmentCategoryOption[] = [
+  { value: "BREAKDOWN_PHOTO", label: "Photo de la panne" },
+  { value: "GENERAL", label: "General" },
+];
 
 function formatDeclaredAt(declaredAt: string): string {
   const parsedDate = new Date(declaredAt);
@@ -38,6 +46,11 @@ export function BreakdownDetailsDrawer({
   onAiDiagnosis,
   onClose,
 }: BreakdownDetailsDrawerProps) {
+  const { can } = useAccessControl();
+  const canReadMediaAttachments = can("mediaAttachmentRead");
+  const canUploadBreakdownImages = can("mediaAttachmentUploadBreakdown");
+  const canManageMediaAttachments = can("mediaAttachmentManage");
+
   if (!open) {
     return null;
   }
@@ -83,6 +96,26 @@ export function BreakdownDetailsDrawer({
                     <InfoLine icon={FileWarning} label="ID panne" value={String(breakdown.id)} />
                   </CardContent>
                 </Card>
+
+                {canReadMediaAttachments ? (
+                  <Card className="border-border/90">
+                    <CardContent className="p-4">
+                      <AttachmentSection
+                        entityType="BREAKDOWN"
+                        entityId={breakdown.id}
+                        eyebrow="Photos de la panne"
+                        title="Constats visuels"
+                        categoryOptions={BREAKDOWN_ATTACHMENT_CATEGORY_OPTIONS}
+                        defaultCategory="BREAKDOWN_PHOTO"
+                        canUpload={canUploadBreakdownImages}
+                        canDelete={canManageMediaAttachments}
+                        uploadTitle="Ajouter des photos de panne"
+                        descriptionPlaceholder="Ex: fuite visible, alarme affichee, zone endommagee..."
+                        emptyMessage="Aucune photo de panne attachee pour le moment."
+                      />
+                    </CardContent>
+                  </Card>
+                ) : null}
 
                 {canAiDiagnosis ? (
                   <Card className="border-border/90">

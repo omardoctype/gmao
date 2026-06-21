@@ -105,6 +105,21 @@ public class WorkOrderController {
                 .build());
     }
 
+    @GetMapping("/{id}/report")
+    @PreAuthorize("hasAnyRole('ADMIN','RESPONSABLE_MAINTENANCE','TECHNICIAN')")
+    @Operation(summary = "Get intervention report by work order id")
+    public ResponseEntity<ApiResponse<InterventionReportResponse>> findReportByWorkOrderId(
+            @PathVariable @Positive Long id,
+            Authentication authentication
+    ) {
+        InterventionReportResponse report = workOrderService.findReportByWorkOrderId(id, authentication);
+        return ResponseEntity.ok(ApiResponse.<InterventionReportResponse>builder()
+                .status(HttpStatus.OK.value())
+                .message("Intervention report fetched successfully")
+                .data(report)
+                .build());
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','RESPONSABLE_MAINTENANCE')")
     @Operation(summary = "Update work order")

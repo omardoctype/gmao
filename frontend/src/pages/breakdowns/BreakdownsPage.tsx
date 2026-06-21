@@ -21,6 +21,7 @@ import { useAccessControl } from "@/hooks/use-access-control";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { type BreakdownFormValues, type BreakdownStatusFormValues } from "@/pages/breakdowns/breakdown.schema";
 import { getApiErrorMessage } from "@/services/api";
+import { uploadAttachments } from "@/services/attachment-service";
 import {
   createBreakdown,
   getBreakdownById,
@@ -251,20 +252,48 @@ export function BreakdownsPage() {
     setAiDiagnosisOpen(true);
   };
 
-  const handleFormSubmit = async (values: BreakdownFormValues) => {
+  const handleFormSubmit = async (values: BreakdownFormValues, photoFiles: File[]) => {
     const payload = toBreakdownPayload(values);
     setSubmittingForm(true);
 
     try {
       if (formMode === "create") {
-        await createBreakdown({
+        const createdBreakdown = await createBreakdown({
           ...payload,
           status: "DECLARED",
         });
-        toast.success("Panne declaree avec succes.");
+        if (photoFiles.length > 0) {
+          try {
+            await uploadAttachments({
+              entityType: "BREAKDOWN",
+              entityId: createdBreakdown.id,
+              category: "BREAKDOWN_PHOTO",
+              files: photoFiles,
+            });
+            toast.success("Panne declaree avec photos.");
+          } catch (attachmentError) {
+            toast.error(getApiErrorMessage(attachmentError, "Panne declaree, mais les photos n'ont pas pu etre ajoutees."));
+          }
+        } else {
+          toast.success("Panne declaree avec succes.");
+        }
       } else if (editingBreakdownId) {
-        await updateBreakdown(editingBreakdownId, payload);
-        toast.success("Panne mise a jour avec succes.");
+        const updatedBreakdown = await updateBreakdown(editingBreakdownId, payload);
+        if (photoFiles.length > 0) {
+          try {
+            await uploadAttachments({
+              entityType: "BREAKDOWN",
+              entityId: updatedBreakdown.id,
+              category: "BREAKDOWN_PHOTO",
+              files: photoFiles,
+            });
+            toast.success("Panne mise a jour avec photos.");
+          } catch (attachmentError) {
+            toast.error(getApiErrorMessage(attachmentError, "Panne mise a jour, mais les photos n'ont pas pu etre ajoutees."));
+          }
+        } else {
+          toast.success("Panne mise a jour avec succes.");
+        }
       }
 
       setFormOpen(false);

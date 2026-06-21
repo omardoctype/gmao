@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoaderCircle } from "lucide-react";
+import { ImagePlus, LoaderCircle, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
@@ -8,7 +8,13 @@ import { Input } from "@/components/ui/input";
 import { ResponsiveCrudPanel } from "@/components/ui/responsive-crud-panel";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/context/toast-context";
 import { breakdownSchema, type BreakdownFormValues } from "@/pages/breakdowns/breakdown.schema";
+import {
+  ATTACHMENT_MAX_FILES,
+  formatAttachmentFileSize,
+  validateAttachmentFiles,
+} from "@/services/attachment-service";
 
 const DEFAULT_FORM_VALUES: BreakdownFormValues = {
   reference: "",
@@ -34,7 +40,7 @@ interface BreakdownFormDrawerProps {
   initialValues?: BreakdownFormValues;
   equipmentOptions: BreakdownEquipmentOption[];
   onClose: () => void;
-  onSubmit: (values: BreakdownFormValues) => Promise<void>;
+  onSubmit: (values: BreakdownFormValues, photoFiles: File[]) => Promise<void>;
 }
 
 export function BreakdownFormDrawer({
@@ -47,15 +53,21 @@ export function BreakdownFormDrawer({
   onClose,
   onSubmit,
 }: BreakdownFormDrawerProps) {
+  const toast = useToast();
   const form = useForm<BreakdownFormValues>({
     resolver: zodResolver(breakdownSchema),
     defaultValues: DEFAULT_FORM_VALUES,
   });
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [photoInputKey, setPhotoInputKey] = useState(0);
 
   useEffect(() => {
     if (!open) {
       return;
     }
+
+    setPhotoFiles([]);
+    setPhotoInputKey((previous) => previous + 1);
 
     if (initialValues) {
       form.reset(initialValues);
@@ -72,6 +84,20 @@ export function BreakdownFormDrawer({
     return null;
   }
   const formId = "breakdown-crud-form";
+
+  const handlePhotoFilesChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextFiles = Array.from(event.target.files ?? []);
+    const validationError = nextFiles.length > 0 ? validateAttachmentFiles(nextFiles) : null;
+
+    if (validationError) {
+      toast.error(validationError);
+      setPhotoFiles([]);
+      setPhotoInputKey((previous) => previous + 1);
+      return;
+    }
+
+    setPhotoFiles(nextFiles);
+  };
 
   return (
     <ResponsiveCrudPanel
@@ -106,7 +132,7 @@ export function BreakdownFormDrawer({
           <LoaderCircle className="h-5 w-5 animate-spin" />
         </div>
       ) : (
-        <form id={formId} className="ds-form" onSubmit={form.handleSubmit(onSubmit)}>
+        <form id={formId} className="ds-form" onSubmit={form.handleSubmit((values) => onSubmit(values, photoFiles))}>
           <div className="ds-form-grid lg:grid-cols-2 lg:gap-6">
             <FormField htmlFor="reference" label="Reference" required error={form.formState.errors.reference?.message}>
               <Input id="reference" placeholder="PN-2026-001" {...form.register("reference")} />
@@ -119,6 +145,50 @@ export function BreakdownFormDrawer({
           <FormField htmlFor="description" label="Description" required error={form.formState.errors.description?.message}>
             <Textarea id="description" rows={4} {...form.register("description")} />
           </FormField>
+
+          <div className="rounded-lg border border-border bg-surface-elevated p-3">
+            <div className="mb-3 flex items-start gap-3">
+              <ImagePlus className="mt-0.5 h-5 w-5 text-primary" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Photos de la panne</p>
+                <p className="text-xs text-muted-foreground">
+                  Optionnel pendant la declaration. JPEG, PNG ou WebP, {ATTACHMENT_MAX_FILES} images maximum.
+                </p>
+              </div>
+            </div>
+            <Input
+              key={photoInputKey}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              disabled={submitting || loadingInitialData}
+              onChange={handlePhotoFilesChange}
+            />
+            {photoFiles.length > 0 ? (
+              <div className="mt-3 space-y-2">
+                {photoFiles.map((file) => (
+                  <div
+                    key={`${file.name}-${file.size}-${file.lastModified}`}
+                    className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatAttachmentFileSize(file.size)}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      aria-label={`Retirer ${file.name}`}
+                      onClick={() => setPhotoFiles((currentFiles) => currentFiles.filter((currentFile) => currentFile !== file))}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
           <div className="ds-form-grid lg:grid-cols-2 lg:gap-6">
             <FormField htmlFor="type" label="Type" required error={form.formState.errors.type?.message}>

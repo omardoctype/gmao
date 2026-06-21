@@ -1,5 +1,6 @@
 export * from "@/types/api";
 export * from "@/types/audit-log";
+export * from "@/types/attachment";
 export * from "@/types/breakdown";
 export * from "@/types/equipment";
 export * from "@/types/maintenance-plan";

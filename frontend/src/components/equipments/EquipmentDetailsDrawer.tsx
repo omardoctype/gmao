@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   Trash2,
 } from "lucide-react";
+import { AttachmentSection } from "@/components/attachments";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +32,7 @@ import {
   openEquipmentDocumentInNewTab,
   uploadEquipmentDocument,
 } from "@/services/equipment-document-service";
+import type { AttachmentCategoryOption } from "@/types/attachment";
 import type { Equipment, EquipmentDocument, EquipmentDocumentType } from "@/types/equipment";
 
 interface EquipmentDetailsDrawerProps {
@@ -48,6 +50,12 @@ const DOCUMENT_TYPE_OPTIONS: ReadonlyArray<{ value: EquipmentDocumentType; label
   { value: "AI_GENERATED_TECHNICAL_NOTE", label: "Document genere par IA" },
   { value: "DOCUMENT_GENERE_PAR_IA", label: "Document IA (legacy)" },
   { value: "AUTRE", label: "Autre" },
+];
+
+const EQUIPMENT_ATTACHMENT_CATEGORY_OPTIONS: AttachmentCategoryOption[] = [
+  { value: "EQUIPMENT_PHOTO", label: "Photo equipement" },
+  { value: "NAMEPLATE", label: "Plaque signaletique" },
+  { value: "GENERAL", label: "General" },
 ];
 
 function statusLabel(status: Equipment["status"]): string {
@@ -156,6 +164,8 @@ export function EquipmentDetailsDrawer({ open, loading, equipment, onClose }: Eq
   const canUploadDocuments = can("equipmentDocumentUpload");
   const canDeleteDocuments = can("equipmentDocumentDelete");
   const canGenerateAiDocument = can("equipmentDocumentGenerateAi");
+  const canReadMediaAttachments = can("mediaAttachmentRead");
+  const canManageMediaAttachments = can("mediaAttachmentManage");
 
   const [documents, setDocuments] = useState<EquipmentDocument[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
@@ -416,6 +426,26 @@ export function EquipmentDetailsDrawer({ open, loading, equipment, onClose }: Eq
                     <p className="text-sm text-foreground">{infoValue(equipment.description)}</p>
                   </CardContent>
                 </Card>
+
+                {canReadMediaAttachments ? (
+                  <Card className="border-border/90">
+                    <CardContent className="p-4">
+                      <AttachmentSection
+                        entityType="EQUIPMENT"
+                        entityId={equipment.id}
+                        eyebrow="Photos et documents"
+                        title="Images de l'equipement"
+                        categoryOptions={EQUIPMENT_ATTACHMENT_CATEGORY_OPTIONS}
+                        defaultCategory="EQUIPMENT_PHOTO"
+                        canUpload={canManageMediaAttachments}
+                        canDelete={canManageMediaAttachments}
+                        uploadTitle="Ajouter une photo"
+                        descriptionPlaceholder="Ex: vue generale, plaque signaletique, zone a surveiller..."
+                        emptyMessage="Aucune image attachee a cet equipement pour le moment."
+                      />
+                    </CardContent>
+                  </Card>
+                ) : null}
 
                 <Card className="border-border/90">
                   <CardContent className="space-y-4 p-4">

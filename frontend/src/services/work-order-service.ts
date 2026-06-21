@@ -19,6 +19,10 @@ export function getWorkOrderById(id: number): Promise<WorkOrder> {
   return apiGetData<WorkOrder>(`${WORK_ORDERS_API_BASE}/${id}`);
 }
 
+export function getWorkOrderInterventionReport(id: number): Promise<InterventionReport> {
+  return apiGetData<InterventionReport>(`${WORK_ORDERS_API_BASE}/${id}/report`);
+}
+
 export function createWorkOrder(payload: WorkOrderPayload): Promise<WorkOrder> {
   return apiPostData<WorkOrder, WorkOrderPayload>(WORK_ORDERS_API_BASE, payload);
 }

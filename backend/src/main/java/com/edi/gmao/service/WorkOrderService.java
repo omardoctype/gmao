@@ -141,16 +141,23 @@ public class WorkOrderService {
     public WorkOrderResponse findById(Long id, Authentication authentication) {
         WorkOrder workOrder = getWorkOrderOrThrow(id);
 
-        if (hasRole(authentication, "ROLE_TECHNICIAN")
-                && !hasAnyRole(authentication, "ROLE_ADMIN", "ROLE_RESPONSABLE_MAINTENANCE")) {
-            User currentUser = getCurrentUser(authentication);
-            if (workOrder.getAssignedTechnician() == null
-                    || !workOrder.getAssignedTechnician().getId().equals(currentUser.getId())) {
-                throw new ApiException(HttpStatus.FORBIDDEN, "You can only access your assigned work orders");
-            }
-        }
+        validateWorkOrderViewPermission(workOrder, authentication);
 
         return workOrderMapper.toResponse(workOrder);
+    }
+
+    @Transactional(readOnly = true)
+    public InterventionReportResponse findReportByWorkOrderId(Long workOrderId, Authentication authentication) {
+        WorkOrder workOrder = getWorkOrderOrThrow(workOrderId);
+        validateWorkOrderViewPermission(workOrder, authentication);
+
+        InterventionReport report = interventionReportRepository.findByWorkOrderId(workOrderId)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "Intervention report not found for work order id: " + workOrderId
+                ));
+
+        return interventionReportMapper.toResponse(report);
     }
 
     @Transactional
@@ -426,6 +433,17 @@ public class WorkOrderService {
         if (workOrder.getAssignedTechnician() == null
                 || !workOrder.getAssignedTechnician().getId().equals(currentUser.getId())) {
             throw new ApiException(HttpStatus.FORBIDDEN, message);
+        }
+    }
+
+    private void validateWorkOrderViewPermission(WorkOrder workOrder, Authentication authentication) {
+        if (hasRole(authentication, "ROLE_TECHNICIAN")
+                && !hasAnyRole(authentication, "ROLE_ADMIN", "ROLE_RESPONSABLE_MAINTENANCE")) {
+            User currentUser = getCurrentUser(authentication);
+            if (workOrder.getAssignedTechnician() == null
+                    || !workOrder.getAssignedTechnician().getId().equals(currentUser.getId())) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "You can only access your assigned work orders");
+            }
         }
     }
 

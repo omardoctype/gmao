@@ -1,16 +1,22 @@
-import { useEffect } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, FileText } from "lucide-react";
+import { CheckCircle2, FileText, ImagePlus, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { ResponsiveCrudPanel } from "@/components/ui/responsive-crud-panel";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/context/toast-context";
 import {
   type WorkOrderInterventionReportFormValues,
   workOrderInterventionReportSchema,
 } from "@/pages/work-orders/work-order.schema";
+import {
+  ATTACHMENT_MAX_FILES,
+  formatAttachmentFileSize,
+  validateAttachmentFiles,
+} from "@/services/attachment-service";
 import type { WorkOrder } from "@/types/work-order";
 
 const DEFAULT_FORM_VALUES: WorkOrderInterventionReportFormValues = {
@@ -28,7 +34,7 @@ interface WorkOrderInterventionReportDrawerProps {
   submitting: boolean;
   workOrder: WorkOrder | null;
   onClose: () => void;
-  onSubmit: (values: WorkOrderInterventionReportFormValues) => Promise<void>;
+  onSubmit: (values: WorkOrderInterventionReportFormValues, finalPhotoFiles: File[]) => Promise<void>;
 }
 
 export function WorkOrderInterventionReportDrawer({
@@ -38,10 +44,13 @@ export function WorkOrderInterventionReportDrawer({
   onClose,
   onSubmit,
 }: WorkOrderInterventionReportDrawerProps) {
+  const toast = useToast();
   const form = useForm<WorkOrderInterventionReportFormValues>({
     resolver: zodResolver(workOrderInterventionReportSchema),
     defaultValues: DEFAULT_FORM_VALUES,
   });
+  const [finalPhotoFiles, setFinalPhotoFiles] = useState<File[]>([]);
+  const [photoInputKey, setPhotoInputKey] = useState(0);
 
   useEffect(() => {
     if (!open) {
@@ -49,6 +58,8 @@ export function WorkOrderInterventionReportDrawer({
     }
 
     form.reset(DEFAULT_FORM_VALUES);
+    setFinalPhotoFiles([]);
+    setPhotoInputKey((previous) => previous + 1);
   }, [open, form]);
 
   if (!open || !workOrder) {
@@ -56,6 +67,20 @@ export function WorkOrderInterventionReportDrawer({
   }
 
   const formId = "work-order-intervention-report-form";
+
+  const handleFinalPhotoFilesChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextFiles = Array.from(event.target.files ?? []);
+    const validationError = nextFiles.length > 0 ? validateAttachmentFiles(nextFiles) : null;
+
+    if (validationError) {
+      toast.error(validationError);
+      setFinalPhotoFiles([]);
+      setPhotoInputKey((previous) => previous + 1);
+      return;
+    }
+
+    setFinalPhotoFiles(nextFiles);
+  };
 
   return (
     <ResponsiveCrudPanel
@@ -77,7 +102,7 @@ export function WorkOrderInterventionReportDrawer({
         </div>
       }
     >
-      <form id={formId} className="ds-form" onSubmit={form.handleSubmit(onSubmit)}>
+      <form id={formId} className="ds-form" onSubmit={form.handleSubmit((values) => onSubmit(values, finalPhotoFiles))}>
         <div className="rounded-lg border border-border bg-surface-elevated px-4 py-3">
           <div className="flex items-start gap-3">
             <FileText className="mt-0.5 h-5 w-5 text-primary" />
@@ -88,6 +113,52 @@ export function WorkOrderInterventionReportDrawer({
               </p>
             </div>
           </div>
+        </div>
+
+        <div className="rounded-lg border border-border bg-surface-elevated p-3">
+          <div className="mb-3 flex items-start gap-3">
+            <ImagePlus className="mt-0.5 h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">Photos finales de l'intervention</p>
+              <p className="text-xs text-muted-foreground">
+                Optionnel pendant la cloture. JPEG, PNG ou WebP, {ATTACHMENT_MAX_FILES} images maximum.
+              </p>
+            </div>
+          </div>
+          <Input
+            key={photoInputKey}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            disabled={submitting}
+            onChange={handleFinalPhotoFilesChange}
+          />
+          {finalPhotoFiles.length > 0 ? (
+            <div className="mt-3 space-y-2">
+              {finalPhotoFiles.map((file) => (
+                <div
+                  key={`${file.name}-${file.size}-${file.lastModified}`}
+                  className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatAttachmentFileSize(file.size)}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    aria-label={`Retirer ${file.name}`}
+                    onClick={() =>
+                      setFinalPhotoFiles((currentFiles) => currentFiles.filter((currentFile) => currentFile !== file))
+                    }
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <FormField

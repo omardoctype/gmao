@@ -26,6 +26,7 @@ import {
   type WorkOrderInterventionReportFormValues,
 } from "@/pages/work-orders/work-order.schema";
 import { getApiErrorMessage } from "@/services/api";
+import { uploadAttachments } from "@/services/attachment-service";
 import { getBreakdownOptions } from "@/services/breakdown-service";
 import { getEquipmentOptions } from "@/services/equipment-service";
 import { downloadWorkOrdersCsv } from "@/services/export-service";
@@ -424,7 +425,7 @@ export function WorkOrdersPage() {
     setCloseReportOpen(true);
   };
 
-  const handleCloseReportSubmit = async (values: WorkOrderInterventionReportFormValues) => {
+  const handleCloseReportSubmit = async (values: WorkOrderInterventionReportFormValues, finalPhotoFiles: File[]) => {
     if (!closeReportTargetWorkOrder) {
       return;
     }
@@ -444,6 +445,23 @@ export function WorkOrdersPage() {
       });
 
       const documentName = report.equipmentDocument?.originalFileName;
+      if (finalPhotoFiles.length > 0) {
+        try {
+          await uploadAttachments({
+            entityType: "INTERVENTION_REPORT",
+            entityId: report.id,
+            category: "FINAL_REPORT_PHOTO",
+            files: finalPhotoFiles,
+          });
+        } catch (attachmentError) {
+          toast.error(
+            getApiErrorMessage(
+              attachmentError,
+              "Rapport enregistre, mais les photos finales n'ont pas pu etre ajoutees.",
+            ),
+          );
+        }
+      }
       toast.success(
         documentName
           ? `OT cloture. Rapport attache a l'equipement: ${documentName}.`

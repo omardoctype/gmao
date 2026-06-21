@@ -69,6 +69,16 @@ export const featureAccessControl = {
   equipmentDocumentUpload: [appRoles.admin, appRoles.maintenanceManager, appRoles.technician],
   equipmentDocumentDelete: [appRoles.admin, appRoles.maintenanceManager],
   equipmentDocumentGenerateAi: [appRoles.admin, appRoles.maintenanceManager],
+  mediaAttachmentRead: [
+    appRoles.admin,
+    appRoles.maintenanceManager,
+    appRoles.technician,
+    appRoles.operator,
+    appRoles.direction,
+  ],
+  mediaAttachmentManage: [appRoles.admin, appRoles.maintenanceManager],
+  mediaAttachmentUploadBreakdown: [appRoles.admin, appRoles.maintenanceManager, appRoles.operator],
+  mediaAttachmentUploadWorkOrder: [appRoles.admin, appRoles.maintenanceManager, appRoles.technician],
   aiAssistantAsk: [appRoles.admin, appRoles.maintenanceManager, appRoles.technician, appRoles.direction],
   aiAssistantDiagnosis: [appRoles.admin, appRoles.maintenanceManager, appRoles.technician, appRoles.operator],
 } as const;
