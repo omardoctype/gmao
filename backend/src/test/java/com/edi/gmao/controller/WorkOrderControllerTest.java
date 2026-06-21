@@ -103,6 +103,59 @@ class WorkOrderControllerTest {
     }
 
     @Test
+    void accept_shouldReturnAcceptedWorkOrder() throws Exception {
+        WorkOrderResponse response = WorkOrderResponse.builder()
+                .id(50L)
+                .reference("OT-050")
+                .type(WorkOrderType.CORRECTIVE)
+                .status(WorkOrderStatus.ACCEPTED)
+                .priority(WorkOrderPriority.HIGH)
+                .createdAt(LocalDateTime.now())
+                .acceptedAt(LocalDateTime.now())
+                .equipmentId(1L)
+                .equipmentCode("EQ-001")
+                .equipmentName("Compresseur")
+                .assignedTechnicianId(7L)
+                .assignedTechnicianName("Ali Mansour")
+                .description("Intervention corrective")
+                .build();
+        when(workOrderService.accept(any(Long.class), any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/work-orders/50/accept"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.status").value("ACCEPTED"))
+                .andExpect(jsonPath("$.data.acceptedAt").exists());
+    }
+
+    @Test
+    void start_shouldReturnStartedWorkOrder() throws Exception {
+        WorkOrderResponse response = WorkOrderResponse.builder()
+                .id(50L)
+                .reference("OT-050")
+                .type(WorkOrderType.CORRECTIVE)
+                .status(WorkOrderStatus.IN_PROGRESS)
+                .priority(WorkOrderPriority.HIGH)
+                .createdAt(LocalDateTime.now())
+                .acceptedAt(LocalDateTime.now().minusMinutes(10))
+                .startedAt(LocalDateTime.now())
+                .equipmentId(1L)
+                .equipmentCode("EQ-001")
+                .equipmentName("Compresseur")
+                .assignedTechnicianId(7L)
+                .assignedTechnicianName("Ali Mansour")
+                .description("Intervention corrective")
+                .build();
+        when(workOrderService.start(any(Long.class), any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/work-orders/50/start"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.data.startedAt").exists());
+    }
+
+    @Test
     void close_shouldReturnClosedWorkOrder() throws Exception {
         WorkOrderResponse response = WorkOrderResponse.builder()
                 .id(50L)
@@ -156,6 +209,40 @@ class WorkOrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.data.id").value(77))
+                .andExpect(jsonPath("$.data.workOrderReference").value("OT-050"));
+    }
+
+    @Test
+    void complete_shouldReturnInterventionReport() throws Exception {
+        InterventionReportResponse response = InterventionReportResponse.builder()
+                .id(88L)
+                .workOrderId(50L)
+                .workOrderReference("OT-050")
+                .equipmentId(1L)
+                .equipmentCode("EQ-001")
+                .equipmentName("Compresseur")
+                .technicianId(7L)
+                .technicianName("Ali Mansour")
+                .performedTasks("Controle, remplacement et essais.")
+                .finalResult("Equipement remis en service.")
+                .closedAt(LocalDateTime.now())
+                .build();
+        when(workOrderService.closeWithReport(any(Long.class), any(), any())).thenReturn(response);
+
+        String body = """
+                {
+                  "performedTasks": "Controle, remplacement et essais.",
+                  "finalResult": "Equipement remis en service.",
+                  "interventionDurationMinutes": 60
+                }
+                """;
+
+        mockMvc.perform(post("/api/work-orders/50/complete")
+                        .contentType(APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.id").value(88))
                 .andExpect(jsonPath("$.data.workOrderReference").value("OT-050"));
     }
 }

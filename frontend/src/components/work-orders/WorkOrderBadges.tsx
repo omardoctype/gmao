@@ -10,6 +10,10 @@ export function workOrderStatusLabel(status: WorkOrderStatus): string {
     return "Affecte";
   }
 
+  if (status === "ACCEPTED") {
+    return "Pris en charge";
+  }
+
   if (status === "IN_PROGRESS") {
     return "En cours";
   }
@@ -68,6 +72,10 @@ export function WorkOrderStatusBadge({ status }: { status: WorkOrderStatus }) {
 
   if (status === "IN_PROGRESS") {
     return <Badge variant="default">{workOrderStatusLabel(status)}</Badge>;
+  }
+
+  if (status === "ACCEPTED") {
+    return <Badge variant="secondary">{workOrderStatusLabel(status)}</Badge>;
   }
 
   if (status === "ASSIGNED") {

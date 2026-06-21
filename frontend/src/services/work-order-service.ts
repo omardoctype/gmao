@@ -31,8 +31,12 @@ export function assignWorkOrderTechnician(id: number, technicianId: number): Pro
   return apiPatchData<WorkOrder>(`${WORK_ORDERS_API_BASE}/${id}/assign/${technicianId}`);
 }
 
+export function acceptWorkOrder(id: number): Promise<WorkOrder> {
+  return apiPostData<WorkOrder>(`${WORK_ORDERS_API_BASE}/${id}/accept`);
+}
+
 export function startWorkOrder(id: number): Promise<WorkOrder> {
-  return apiPatchData<WorkOrder>(`${WORK_ORDERS_API_BASE}/${id}/start`);
+  return apiPostData<WorkOrder>(`${WORK_ORDERS_API_BASE}/${id}/start`);
 }
 
 export function closeWorkOrder(id: number): Promise<WorkOrder> {
@@ -43,8 +47,8 @@ export function closeWorkOrderWithReport(
   id: number,
   payload: InterventionReportPayload,
 ): Promise<InterventionReport> {
-  return apiPatchData<InterventionReport, InterventionReportPayload>(
-    `${WORK_ORDERS_API_BASE}/${id}/close-with-report`,
+  return apiPostData<InterventionReport, InterventionReportPayload>(
+    `${WORK_ORDERS_API_BASE}/${id}/complete`,
     payload,
   );
 }

@@ -108,6 +108,35 @@ public class NotificationService {
         createIfAbsent(NotificationType.OVERDUE_WORK_ORDER, title, message, eventKey);
     }
 
+    @Transactional
+    public void notifyWorkOrderAccepted(WorkOrder workOrder) {
+        String eventKey = "WORK_ORDER_ACCEPTED:" + workOrder.getId();
+        String title = "Ordre de travail pris en charge";
+        String message = "Le technicien a pris en charge l'ordre de travail "
+                + workOrder.getReference() + " sur l'equipement " + workOrder.getEquipment().getCode() + ".";
+        createIfAbsent(NotificationType.WORK_ORDER_INTERVENTION, title, message, eventKey);
+    }
+
+    @Transactional
+    public void notifyWorkOrderStarted(WorkOrder workOrder) {
+        String eventKey = "WORK_ORDER_STARTED:" + workOrder.getId();
+        String title = "Intervention demarree";
+        String message = "L'intervention de l'ordre de travail "
+                + workOrder.getReference() + " a demarre sur l'equipement "
+                + workOrder.getEquipment().getCode() + ".";
+        createIfAbsent(NotificationType.WORK_ORDER_INTERVENTION, title, message, eventKey);
+    }
+
+    @Transactional
+    public void notifyWorkOrderCompleted(WorkOrder workOrder) {
+        String eventKey = "WORK_ORDER_COMPLETED:" + workOrder.getId();
+        String title = "Intervention terminee";
+        String message = "L'ordre de travail " + workOrder.getReference()
+                + " est termine. Duree reelle calculee : "
+                + workOrder.getActualDurationMinutes() + " minutes.";
+        createIfAbsent(NotificationType.WORK_ORDER_INTERVENTION, title, message, eventKey);
+    }
+
     private void createIfAbsent(NotificationType type, String title, String message, String eventKey) {
         if (notificationRepository.existsByEventKey(eventKey)) {
             return;

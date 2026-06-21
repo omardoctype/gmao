@@ -18,6 +18,7 @@ public class NotificationSchedulerService {
     private static final List<WorkOrderStatus> OVERDUE_STATUSES = List.of(
             WorkOrderStatus.CREATED,
             WorkOrderStatus.ASSIGNED,
+            WorkOrderStatus.ACCEPTED,
             WorkOrderStatus.IN_PROGRESS
     );
 

@@ -1,4 +1,4 @@
-import { CheckCircle2, Eye, Pencil, Play, UserRoundPlus } from "lucide-react";
+import { CheckCircle2, Eye, Hand, LoaderCircle, Pencil, Play, UserRoundPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -11,12 +11,13 @@ import type { WorkOrder } from "@/types/work-order";
 interface WorkOrderTableProps {
   workOrders: WorkOrder[];
   canManage: boolean;
-  canStart: boolean;
-  canClose: boolean;
+  canInterventionAction: boolean;
+  currentUserId: number | string | null;
   processingActionWorkOrderId: number | null;
   onView: (workOrder: WorkOrder) => void;
   onEdit: (workOrder: WorkOrder) => void;
   onAssign: (workOrder: WorkOrder) => void;
+  onAccept: (workOrder: WorkOrder) => void;
   onStart: (workOrder: WorkOrder) => void;
   onClose: (workOrder: WorkOrder) => void;
 }
@@ -37,12 +38,13 @@ function formatDateTime(value: string | null): string {
 export function WorkOrderTable({
   workOrders,
   canManage,
-  canStart,
-  canClose,
+  canInterventionAction,
+  currentUserId,
   processingActionWorkOrderId,
   onView,
   onEdit,
   onAssign,
+  onAccept,
   onStart,
   onClose,
 }: WorkOrderTableProps) {
@@ -62,82 +64,106 @@ export function WorkOrderTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {workOrders.map((workOrder) => (
-          <TableRow key={workOrder.id}>
-            <TableCell className="font-semibold">{workOrder.reference}</TableCell>
-            <TableCell className="sticky right-0 bg-surface/95">
-              <p className="text-sm text-foreground">{workOrder.equipmentCode}</p>
-              <p className="text-xs text-muted-foreground">{workOrder.equipmentName}</p>
-            </TableCell>
-            <TableCell>{workOrder.breakdownReference ?? "-"}</TableCell>
-            <TableCell>
-              <WorkOrderTypeBadge type={workOrder.type} />
-            </TableCell>
-            <TableCell>
-              <WorkOrderPriorityBadge priority={workOrder.priority} />
-            </TableCell>
-            <TableCell>
-              <WorkOrderStatusBadge status={workOrder.status} />
-            </TableCell>
-            <TableCell>{workOrder.assignedTechnicianName ?? "-"}</TableCell>
-            <TableCell>{formatDateTime(workOrder.plannedDate)}</TableCell>
-            <TableCell>
-              <div className="flex justify-end gap-1.5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onView(workOrder)}
-                  aria-label={`Voir les details de l'ordre de travail ${workOrder.reference}`}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-                {canManage ? (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(workOrder)}
-                      aria-label={`Modifier l'ordre de travail ${workOrder.reference}`}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onAssign(workOrder)}
-                      aria-label={`Affecter un technicien a l'ordre de travail ${workOrder.reference}`}
-                    >
-                      <UserRoundPlus className="h-4 w-4" />
-                    </Button>
-                  </>
-                ) : null}
-                {canStart ? (
+        {workOrders.map((workOrder) => {
+          const assignedToCurrentUser =
+            canInterventionAction &&
+            currentUserId !== null &&
+            workOrder.assignedTechnicianId !== null &&
+            String(workOrder.assignedTechnicianId) === String(currentUserId);
+          const isProcessing = processingActionWorkOrderId === workOrder.id;
+
+          return (
+            <TableRow key={workOrder.id}>
+              <TableCell className="font-semibold">{workOrder.reference}</TableCell>
+              <TableCell className="sticky right-0 bg-surface/95">
+                <p className="text-sm text-foreground">{workOrder.equipmentCode}</p>
+                <p className="text-xs text-muted-foreground">{workOrder.equipmentName}</p>
+              </TableCell>
+              <TableCell>{workOrder.breakdownReference ?? "-"}</TableCell>
+              <TableCell>
+                <WorkOrderTypeBadge type={workOrder.type} />
+              </TableCell>
+              <TableCell>
+                <WorkOrderPriorityBadge priority={workOrder.priority} />
+              </TableCell>
+              <TableCell>
+                <WorkOrderStatusBadge status={workOrder.status} />
+              </TableCell>
+              <TableCell>{workOrder.assignedTechnicianName ?? "-"}</TableCell>
+              <TableCell>{formatDateTime(workOrder.plannedDate)}</TableCell>
+              <TableCell>
+                <div className="flex justify-end gap-1.5">
                   <Button
                     variant="ghost"
                     size="sm"
-                    disabled={processingActionWorkOrderId === workOrder.id || workOrder.status !== "ASSIGNED"}
-                    onClick={() => onStart(workOrder)}
-                    aria-label={`Demarrer l'ordre de travail ${workOrder.reference}`}
+                    onClick={() => onView(workOrder)}
+                    aria-label={`Voir les details de l'ordre de travail ${workOrder.reference}`}
                   >
-                    <Play className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   </Button>
-                ) : null}
-                {canClose ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    title="Cloturer avec rapport"
-                    disabled={processingActionWorkOrderId === workOrder.id || workOrder.status !== "IN_PROGRESS"}
-                    onClick={() => onClose(workOrder)}
-                    aria-label={`Cloturer l'ordre de travail ${workOrder.reference} avec rapport`}
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                  </Button>
-                ) : null}
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
+                  {canManage ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(workOrder)}
+                        aria-label={`Modifier l'ordre de travail ${workOrder.reference}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onAssign(workOrder)}
+                        aria-label={`Affecter un technicien a l'ordre de travail ${workOrder.reference}`}
+                      >
+                        <UserRoundPlus className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : null}
+                  {assignedToCurrentUser && workOrder.status === "ASSIGNED" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={isProcessing}
+                      onClick={() => onAccept(workOrder)}
+                      aria-label={`Prendre en charge l'ordre de travail ${workOrder.reference}`}
+                    >
+                      {isProcessing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Hand className="h-4 w-4" />}
+                    </Button>
+                  ) : null}
+                  {assignedToCurrentUser && workOrder.status === "ACCEPTED" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={isProcessing}
+                      onClick={() => onStart(workOrder)}
+                      aria-label={`Demarrer l'intervention ${workOrder.reference}`}
+                    >
+                      {isProcessing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                    </Button>
+                  ) : null}
+                  {assignedToCurrentUser && workOrder.status === "IN_PROGRESS" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Terminer avec rapport"
+                      disabled={isProcessing}
+                      onClick={() => onClose(workOrder)}
+                      aria-label={`Terminer l'intervention ${workOrder.reference} avec rapport`}
+                    >
+                      {isProcessing ? (
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  ) : null}
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );

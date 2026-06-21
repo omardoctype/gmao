@@ -8,6 +8,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -39,6 +40,10 @@ public class WorkOrderRequest {
 
     @Schema(description = "Date/heure planifiee", example = "2026-04-20T09:00:00")
     private LocalDateTime plannedDate;
+
+    @PositiveOrZero
+    @Schema(description = "Duree estimee en minutes", example = "120")
+    private Integer estimatedDurationMinutes;
 
     @DecimalMin(value = "0.0", inclusive = true)
     @Schema(description = "Cout estime", example = "150.00")

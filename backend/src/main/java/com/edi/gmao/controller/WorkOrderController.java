@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -48,7 +49,7 @@ public class WorkOrderController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('RESPONSABLE_MAINTENANCE')")
+    @PreAuthorize("hasAnyRole('ADMIN','RESPONSABLE_MAINTENANCE')")
     @Operation(
             summary = "Create a work order",
             description = "Cree un ordre de travail (OT). Acces: RESPONSABLE_MAINTENANCE."
@@ -105,7 +106,7 @@ public class WorkOrderController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('RESPONSABLE_MAINTENANCE')")
+    @PreAuthorize("hasAnyRole('ADMIN','RESPONSABLE_MAINTENANCE')")
     @Operation(summary = "Update work order")
     public ResponseEntity<ApiResponse<WorkOrderResponse>> update(
             @PathVariable @Positive Long id,
@@ -120,7 +121,7 @@ public class WorkOrderController {
     }
 
     @PatchMapping("/{id}/assign/{technicianId}")
-    @PreAuthorize("hasRole('RESPONSABLE_MAINTENANCE')")
+    @PreAuthorize("hasAnyRole('ADMIN','RESPONSABLE_MAINTENANCE')")
     @Operation(
             summary = "Assign technician to work order",
             description = "Affecte un technicien a un OT. Acces: RESPONSABLE_MAINTENANCE."
@@ -137,7 +138,22 @@ public class WorkOrderController {
                 .build());
     }
 
-    @PatchMapping("/{id}/start")
+    @PostMapping("/{id}/accept")
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    @Operation(summary = "Accept assigned work order")
+    public ResponseEntity<ApiResponse<WorkOrderResponse>> accept(
+            @PathVariable @Positive Long id,
+            Authentication authentication
+    ) {
+        WorkOrderResponse updated = workOrderService.accept(id, authentication);
+        return ResponseEntity.ok(ApiResponse.<WorkOrderResponse>builder()
+                .status(HttpStatus.OK.value())
+                .message("Work order accepted successfully")
+                .data(updated)
+                .build());
+    }
+
+    @RequestMapping(value = "/{id}/start", method = {RequestMethod.POST, RequestMethod.PATCH})
     @PreAuthorize("hasRole('TECHNICIAN')")
     @Operation(summary = "Start assigned work order")
     public ResponseEntity<ApiResponse<WorkOrderResponse>> start(
@@ -153,7 +169,7 @@ public class WorkOrderController {
     }
 
     @PatchMapping("/{id}/close")
-    @PreAuthorize("hasRole('RESPONSABLE_MAINTENANCE')")
+    @PreAuthorize("hasAnyRole('ADMIN','RESPONSABLE_MAINTENANCE')")
     @Operation(
             summary = "Close work order",
             description = "Cloture un OT en cours. Acces: RESPONSABLE_MAINTENANCE."
@@ -164,6 +180,25 @@ public class WorkOrderController {
                 .status(HttpStatus.OK.value())
                 .message("Work order closed successfully")
                 .data(updated)
+                .build());
+    }
+
+    @PostMapping("/{id}/complete")
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    @Operation(
+            summary = "Complete work order with intervention report",
+            description = "Termine une intervention en cours, calcule la duree reelle et sauvegarde le rapport terrain."
+    )
+    public ResponseEntity<ApiResponse<InterventionReportResponse>> complete(
+            @PathVariable @Positive Long id,
+            @Valid @RequestBody InterventionReportRequest request,
+            Authentication authentication
+    ) {
+        InterventionReportResponse report = workOrderService.closeWithReport(id, request, authentication);
+        return ResponseEntity.ok(ApiResponse.<InterventionReportResponse>builder()
+                .status(HttpStatus.OK.value())
+                .message("Work order completed with intervention report successfully")
+                .data(report)
                 .build());
     }
 

@@ -1,4 +1,4 @@
-import { AlertTriangle, Boxes, ClockAlert } from "lucide-react";
+import { AlertTriangle, Boxes, CheckCircle2, ClockAlert } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { BadgeProps } from "@/components/ui/badge";
 import type { NotificationItem } from "@/types/notification";
@@ -33,6 +33,11 @@ const NOTIFICATION_TYPE_CONFIG: Record<string, NotificationTypeConfig> = {
     label: "OT en retard",
     variant: "secondary",
     icon: ClockAlert,
+  },
+  WORK_ORDER_INTERVENTION: {
+    label: "Intervention OT",
+    variant: "success",
+    icon: CheckCircle2,
   },
 };
 

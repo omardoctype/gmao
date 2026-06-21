@@ -2,23 +2,24 @@ import { cn } from "@/lib/utils";
 import type { WorkOrderStatus } from "@/types/work-order";
 
 interface TimelineStep {
-  key: "CREATED" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED";
+  key: "ASSIGNED" | "ACCEPTED" | "IN_PROGRESS" | "COMPLETED";
   label: string;
 }
 
 const TIMELINE_STEPS: TimelineStep[] = [
-  { key: "CREATED", label: "Creation" },
-  { key: "ASSIGNED", label: "Affectation" },
-  { key: "IN_PROGRESS", label: "Intervention" },
-  { key: "COMPLETED", label: "Cloture" },
+  { key: "ASSIGNED", label: "Affecte" },
+  { key: "ACCEPTED", label: "Pris en charge" },
+  { key: "IN_PROGRESS", label: "En cours" },
+  { key: "COMPLETED", label: "Termine" },
 ];
 
 const STEP_ORDER: Record<WorkOrderStatus, number> = {
-  CREATED: 0,
-  ASSIGNED: 1,
+  CREATED: -1,
+  ASSIGNED: 0,
+  ACCEPTED: 1,
   IN_PROGRESS: 2,
   COMPLETED: 3,
-  CANCELLED: 0,
+  CANCELLED: -1,
 };
 
 interface WorkOrderStatusTimelineProps {
@@ -33,6 +34,7 @@ export function WorkOrderStatusTimeline({ status }: WorkOrderStatusTimelineProps
     <div className="space-y-2">
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
         {TIMELINE_STEPS.map((step, index) => {
+          const isCurrent = !isCancelled && index === currentStep;
           const isDone = !isCancelled && index <= currentStep;
 
           return (
@@ -43,8 +45,10 @@ export function WorkOrderStatusTimeline({ status }: WorkOrderStatusTimelineProps
                     "inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold",
                     isCancelled
                       ? "bg-muted text-muted-foreground"
-                      : isDone
+                      : isCurrent
                         ? "bg-primary text-primary-foreground"
+                        : isDone
+                          ? "bg-success text-success-foreground"
                         : "bg-secondary text-secondary-foreground",
                   )}
                 >

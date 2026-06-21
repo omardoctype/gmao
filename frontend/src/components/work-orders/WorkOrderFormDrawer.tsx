@@ -28,6 +28,7 @@ const DEFAULT_FORM_VALUES: WorkOrderFormValues = {
   status: "CREATED",
   priority: "MEDIUM",
   plannedDate: "",
+  estimatedDurationMinutes: "",
   estimatedCost: "",
   realCost: "",
   description: "",
@@ -155,6 +156,7 @@ export function WorkOrderFormDrawer({
               <Select id="status" {...form.register("status")} disabled={mode === "create"}>
                 <option value="CREATED">Cree</option>
                 <option value="ASSIGNED">Affecte</option>
+                <option value="ACCEPTED">Pris en charge</option>
                 <option value="IN_PROGRESS">En cours</option>
                 <option value="COMPLETED">Cloture</option>
                 <option value="CANCELLED">Annule</option>
@@ -198,12 +200,27 @@ export function WorkOrderFormDrawer({
             <FormField htmlFor="plannedDate" label="Date planifiee" error={form.formState.errors.plannedDate?.message}>
               <Input id="plannedDate" type="datetime-local" {...form.register("plannedDate")} />
             </FormField>
-            <FormField htmlFor="estimatedCost" label="Cout estime" error={form.formState.errors.estimatedCost?.message}>
-              <Input id="estimatedCost" type="number" min="0" step="0.01" {...form.register("estimatedCost")} />
+            <FormField
+              htmlFor="estimatedDurationMinutes"
+              label="Duree estimee"
+              hint="Exemple : 120 minutes = 2 heures."
+              error={form.formState.errors.estimatedDurationMinutes?.message}
+            >
+              <Input
+                id="estimatedDurationMinutes"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="120"
+                {...form.register("estimatedDurationMinutes")}
+              />
             </FormField>
           </div>
 
           <div className="ds-form-grid lg:grid-cols-2 lg:gap-6">
+            <FormField htmlFor="estimatedCost" label="Cout estime" error={form.formState.errors.estimatedCost?.message}>
+              <Input id="estimatedCost" type="number" min="0" step="0.01" {...form.register("estimatedCost")} />
+            </FormField>
             <FormField htmlFor="realCost" label="Cout reel" error={form.formState.errors.realCost?.message}>
               <Input id="realCost" type="number" min="0" step="0.01" {...form.register("realCost")} />
             </FormField>

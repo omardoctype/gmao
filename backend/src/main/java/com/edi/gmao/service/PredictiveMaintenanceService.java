@@ -44,6 +44,7 @@ public class PredictiveMaintenanceService {
     private static final Set<WorkOrderStatus> OPEN_WORK_ORDER_STATUSES = EnumSet.of(
             WorkOrderStatus.CREATED,
             WorkOrderStatus.ASSIGNED,
+            WorkOrderStatus.ACCEPTED,
             WorkOrderStatus.IN_PROGRESS
     );
 

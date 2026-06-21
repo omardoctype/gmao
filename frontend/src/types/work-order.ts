@@ -2,7 +2,7 @@ import type { EquipmentDocument } from "@/types/equipment";
 
 export type WorkOrderType = "CORRECTIVE" | "PREVENTIVE" | "INSPECTION" | "INSTALLATION" | "OTHER";
 
-export type WorkOrderStatus = "CREATED" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type WorkOrderStatus = "CREATED" | "ASSIGNED" | "ACCEPTED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
 export type WorkOrderPriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -14,8 +14,12 @@ export interface WorkOrder {
   priority: WorkOrderPriority;
   createdAt: string;
   plannedDate: string | null;
+  assignedAt: string | null;
+  acceptedAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
+  estimatedDurationMinutes: number | null;
+  actualDurationMinutes: number | null;
   estimatedCost: number | null;
   realCost: number | null;
   description: string;
@@ -34,6 +38,7 @@ export interface WorkOrderPayload {
   status?: WorkOrderStatus;
   priority: WorkOrderPriority;
   plannedDate?: string | null;
+  estimatedDurationMinutes?: number | null;
   estimatedCost?: number | null;
   realCost?: number | null;
   description: string;

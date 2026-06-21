@@ -342,11 +342,17 @@ public class GmaoDemoDataInitializer implements CommandLineRunner {
                 createdAt = now.minusHours(randomBetween(random, 1, 36));
             }
             LocalDateTime plannedDate = plannedDateForStatus(now, createdAt, status, i, random);
+            LocalDateTime assignedAt = assignedAtForStatus(status, createdAt, random);
+            LocalDateTime acceptedAt = acceptedAtForStatus(status, assignedAt, random);
             LocalDateTime startedAt = startedAtForStatus(status, plannedDate, random);
             if (startedAt != null && startedAt.isAfter(now.minusMinutes(30))) {
                 startedAt = now.minusHours(randomBetween(random, 1, 18));
             }
             LocalDateTime completedAt = completedAtForStatus(status, startedAt, now, random);
+            Integer estimatedDurationMinutes = randomBetween(random, 45, 480);
+            Integer actualDurationMinutes = completedAt == null || startedAt == null
+                    ? null
+                    : Math.toIntExact(java.time.Duration.between(startedAt, completedAt).toMinutes());
 
             BigDecimal estimatedCost = randomMoney(random, 180, 5400);
             BigDecimal realCost = realCostForStatus(status, estimatedCost, random);
@@ -358,8 +364,12 @@ public class GmaoDemoDataInitializer implements CommandLineRunner {
             workOrder.setPriority(workOrderPriorityForIndex(i));
             workOrder.setCreatedAt(createdAt);
             workOrder.setPlannedDate(plannedDate);
+            workOrder.setAssignedAt(assignedAt);
+            workOrder.setAcceptedAt(acceptedAt);
             workOrder.setStartedAt(startedAt);
             workOrder.setCompletedAt(completedAt);
+            workOrder.setEstimatedDurationMinutes(estimatedDurationMinutes);
+            workOrder.setActualDurationMinutes(actualDurationMinutes);
             workOrder.setEstimatedCost(estimatedCost);
             workOrder.setRealCost(realCost);
             workOrder.setDescription(buildWorkOrderDescription(linkedBreakdown, equipment, status));
@@ -367,6 +377,7 @@ public class GmaoDemoDataInitializer implements CommandLineRunner {
             workOrder.setBreakdown(linkedBreakdown);
 
             if (technician != null && (status == WorkOrderStatus.ASSIGNED
+                    || status == WorkOrderStatus.ACCEPTED
                     || status == WorkOrderStatus.IN_PROGRESS
                     || status == WorkOrderStatus.COMPLETED
                     || i % 12 == 0)) {
@@ -541,6 +552,7 @@ public class GmaoDemoDataInitializer implements CommandLineRunner {
         List<WorkOrder> reportableWorkOrders = workOrders.stream()
                 .filter(wo -> wo.getStatus() == WorkOrderStatus.COMPLETED
                         || wo.getStatus() == WorkOrderStatus.IN_PROGRESS
+                        || wo.getStatus() == WorkOrderStatus.ACCEPTED
                         || wo.getStatus() == WorkOrderStatus.ASSIGNED)
                 .collect(Collectors.toList());
 
@@ -751,8 +763,12 @@ public class GmaoDemoDataInitializer implements CommandLineRunner {
             workOrder.setStatus(WorkOrderStatus.COMPLETED);
             workOrder.setPriority(WorkOrderPriority.LOW);
             workOrder.setPlannedDate(plannedDate);
+            workOrder.setAssignedAt(plannedDate.minusHours(12));
+            workOrder.setAcceptedAt(plannedDate.minusHours(4));
             workOrder.setStartedAt(startedAt);
             workOrder.setCompletedAt(completedAt);
+            workOrder.setEstimatedDurationMinutes(180);
+            workOrder.setActualDurationMinutes(Math.toIntExact(java.time.Duration.between(startedAt, completedAt).toMinutes()));
             workOrder.setEstimatedCost(BigDecimal.valueOf(120));
             workOrder.setRealCost(BigDecimal.valueOf(95));
             workOrder.setDescription(
@@ -774,12 +790,17 @@ public class GmaoDemoDataInitializer implements CommandLineRunner {
         }
         LocalDateTime preventivePlannedDate = now.minusDays(15);
         LocalDateTime preventiveStartedAt = preventivePlannedDate.plusHours(1);
+        LocalDateTime preventiveCompletedAt = now.minusDays(14);
         preventiveWorkOrder.setType(WorkOrderType.PREVENTIVE);
         preventiveWorkOrder.setStatus(WorkOrderStatus.COMPLETED);
         preventiveWorkOrder.setPriority(WorkOrderPriority.LOW);
         preventiveWorkOrder.setPlannedDate(preventivePlannedDate);
+        preventiveWorkOrder.setAssignedAt(preventivePlannedDate.minusHours(10));
+        preventiveWorkOrder.setAcceptedAt(preventivePlannedDate.minusHours(2));
         preventiveWorkOrder.setStartedAt(preventiveStartedAt);
-        preventiveWorkOrder.setCompletedAt(now.minusDays(14));
+        preventiveWorkOrder.setCompletedAt(preventiveCompletedAt);
+        preventiveWorkOrder.setEstimatedDurationMinutes(120);
+        preventiveWorkOrder.setActualDurationMinutes(Math.toIntExact(java.time.Duration.between(preventiveStartedAt, preventiveCompletedAt).toMinutes()));
         preventiveWorkOrder.setEstimatedCost(BigDecimal.valueOf(180));
         preventiveWorkOrder.setRealCost(BigDecimal.valueOf(160));
         preventiveWorkOrder.setDescription(
@@ -809,12 +830,17 @@ public class GmaoDemoDataInitializer implements CommandLineRunner {
             }
 
             LocalDateTime plannedDate = now.minusDays(20L + i);
+            WorkOrderStatus status = i % 2 == 0 ? WorkOrderStatus.ASSIGNED : WorkOrderStatus.IN_PROGRESS;
             workOrder.setType(WorkOrderType.CORRECTIVE);
-            workOrder.setStatus(i % 2 == 0 ? WorkOrderStatus.ASSIGNED : WorkOrderStatus.IN_PROGRESS);
-            workOrder.setPriority(i % 2 == 0 ? WorkOrderPriority.HIGH : WorkOrderPriority.CRITICAL);
+            workOrder.setStatus(status);
+            workOrder.setPriority(status == WorkOrderStatus.ASSIGNED ? WorkOrderPriority.HIGH : WorkOrderPriority.CRITICAL);
             workOrder.setPlannedDate(plannedDate);
-            workOrder.setStartedAt(workOrder.getStatus() == WorkOrderStatus.IN_PROGRESS ? plannedDate.plusHours(4) : null);
+            workOrder.setAssignedAt(plannedDate.minusHours(12));
+            workOrder.setAcceptedAt(status == WorkOrderStatus.IN_PROGRESS ? plannedDate.minusHours(2) : null);
+            workOrder.setStartedAt(status == WorkOrderStatus.IN_PROGRESS ? plannedDate.plusHours(4) : null);
             workOrder.setCompletedAt(null);
+            workOrder.setEstimatedDurationMinutes(240);
+            workOrder.setActualDurationMinutes(null);
             workOrder.setEstimatedCost(BigDecimal.valueOf(2500));
             workOrder.setRealCost(null);
             workOrder.setDescription(
@@ -867,8 +893,12 @@ public class GmaoDemoDataInitializer implements CommandLineRunner {
         workOrder.setStatus(status);
         workOrder.setPriority(WorkOrderPriority.CRITICAL);
         workOrder.setPlannedDate(plannedDate);
+        workOrder.setAssignedAt(plannedDate.minusHours(12));
+        workOrder.setAcceptedAt(status == WorkOrderStatus.IN_PROGRESS ? plannedDate.minusHours(3) : null);
         workOrder.setStartedAt(status == WorkOrderStatus.IN_PROGRESS ? plannedDate.plusHours(6) : null);
         workOrder.setCompletedAt(null);
+        workOrder.setEstimatedDurationMinutes(180);
+        workOrder.setActualDurationMinutes(null);
         workOrder.setEstimatedCost(BigDecimal.valueOf(1800));
         workOrder.setRealCost(null);
         workOrder.setDescription(
@@ -920,10 +950,13 @@ public class GmaoDemoDataInitializer implements CommandLineRunner {
         if (index <= 20) {
             return WorkOrderStatus.ASSIGNED;
         }
-        if (index <= 32) {
+        if (index <= 28) {
+            return WorkOrderStatus.ACCEPTED;
+        }
+        if (index <= 36) {
             return WorkOrderStatus.IN_PROGRESS;
         }
-        if (index <= 44) {
+        if (index <= 46) {
             return WorkOrderStatus.COMPLETED;
         }
         return WorkOrderStatus.CANCELLED;
@@ -965,7 +998,7 @@ public class GmaoDemoDataInitializer implements CommandLineRunner {
                 }
                 yield createdAt.plusDays(randomBetween(random, 2, 35));
             }
-            case ASSIGNED -> {
+            case ASSIGNED, ACCEPTED -> {
                 if (index % 4 == 0) {
                     yield now.minusDays(randomBetween(random, 1, 8));
                 }
@@ -986,6 +1019,23 @@ public class GmaoDemoDataInitializer implements CommandLineRunner {
                 yield planned;
             }
             case CANCELLED -> createdAt.plusDays(randomBetween(random, 1, 20));
+        };
+    }
+
+    private LocalDateTime assignedAtForStatus(WorkOrderStatus status, LocalDateTime createdAt, Random random) {
+        return switch (status) {
+            case ASSIGNED, ACCEPTED, IN_PROGRESS, COMPLETED -> createdAt.plusHours(randomBetween(random, 2, 24));
+            default -> null;
+        };
+    }
+
+    private LocalDateTime acceptedAtForStatus(WorkOrderStatus status, LocalDateTime assignedAt, Random random) {
+        if (assignedAt == null) {
+            return null;
+        }
+        return switch (status) {
+            case ACCEPTED, IN_PROGRESS, COMPLETED -> assignedAt.plusHours(randomBetween(random, 1, 8));
+            default -> null;
         };
     }
 

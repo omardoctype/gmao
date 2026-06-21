@@ -23,8 +23,12 @@ public class WorkOrderResponse {
     private WorkOrderPriority priority;
     private LocalDateTime createdAt;
     private LocalDateTime plannedDate;
+    private LocalDateTime assignedAt;
+    private LocalDateTime acceptedAt;
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
+    private Integer estimatedDurationMinutes;
+    private Integer actualDurationMinutes;
     private BigDecimal estimatedCost;
     private BigDecimal realCost;
     private String description;

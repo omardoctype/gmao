@@ -16,6 +16,7 @@ import { FilterField, ListQueryControls } from "@/components/ui/list-query-contr
 import { PageEmptyState, PageErrorState, PageLoadingState, PageRestrictedState } from "@/components/ui/page-states";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { Select } from "@/components/ui/select";
+import { useAuthContext } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
 import { useAccessControl } from "@/hooks/use-access-control";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -29,6 +30,7 @@ import { getBreakdownOptions } from "@/services/breakdown-service";
 import { getEquipmentOptions } from "@/services/equipment-service";
 import { downloadWorkOrdersCsv } from "@/services/export-service";
 import {
+  acceptWorkOrder,
   assignWorkOrderTechnician,
   closeWorkOrderWithReport,
   createWorkOrder,
@@ -100,6 +102,7 @@ function toWorkOrderPayload(values: WorkOrderFormValues): WorkOrderPayload {
     status: values.status,
     priority: values.priority,
     plannedDate: toNullableText(values.plannedDate),
+    estimatedDurationMinutes: toNullableNumber(values.estimatedDurationMinutes),
     estimatedCost: toNullableNumber(values.estimatedCost),
     realCost: toNullableNumber(values.realCost),
     description: values.description.trim(),
@@ -115,6 +118,8 @@ function toWorkOrderFormValues(workOrder: WorkOrder): WorkOrderFormValues {
     status: workOrder.status,
     priority: workOrder.priority,
     plannedDate: toDateTimeLocalValue(workOrder.plannedDate),
+    estimatedDurationMinutes:
+      workOrder.estimatedDurationMinutes !== null ? String(workOrder.estimatedDurationMinutes) : "",
     estimatedCost: workOrder.estimatedCost !== null ? String(workOrder.estimatedCost) : "",
     realCost: workOrder.realCost !== null ? String(workOrder.realCost) : "",
     description: workOrder.description,
@@ -125,12 +130,13 @@ function toWorkOrderFormValues(workOrder: WorkOrder): WorkOrderFormValues {
 
 export function WorkOrdersPage() {
   const { can } = useAccessControl();
+  const { user } = useAuthContext();
   const toast = useToast();
   const canRead = can("workOrderRead");
   const canManage = can("workOrderManage");
-  const canStart = can("workOrderStart");
-  const canCloseWithReport = can("workOrderCloseWithReport");
+  const canInterventionAction = can("workOrderStart");
   const canExport = can("exportCsv");
+  const currentUserId = user?.id ?? null;
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [equipmentOptions, setEquipmentOptions] = useState<WorkOrderEquipmentOption[]>([]);
@@ -171,6 +177,28 @@ export function WorkOrdersPage() {
 
   const [processingActionWorkOrderId, setProcessingActionWorkOrderId] = useState<number | null>(null);
   const [exportingCsv, setExportingCsv] = useState(false);
+
+  const isAssignedTechnician = (workOrder: WorkOrder): boolean => {
+    if (!canInterventionAction || currentUserId === null || workOrder.assignedTechnicianId === null) {
+      return false;
+    }
+
+    return String(workOrder.assignedTechnicianId) === String(currentUserId);
+  };
+
+  const refreshSelectedWorkOrder = async (workOrderId: number) => {
+    if (!detailsOpen || selectedWorkOrder?.id !== workOrderId) {
+      return;
+    }
+
+    try {
+      const freshWorkOrder = await getWorkOrderById(workOrderId);
+      setSelectedWorkOrder(freshWorkOrder);
+    } catch {
+      setSelectedWorkOrder(null);
+      setDetailsOpen(false);
+    }
+  };
 
   const resetFilters = () => {
     setSearchInput("");
@@ -349,9 +377,27 @@ export function WorkOrdersPage() {
     }
   };
 
+  const handleAccept = async (workOrder: WorkOrder) => {
+    if (!isAssignedTechnician(workOrder)) {
+      return;
+    }
+
+    setProcessingActionWorkOrderId(workOrder.id);
+
+    try {
+      await acceptWorkOrder(workOrder.id);
+      toast.success("Ordre de travail pris en charge.");
+      await refreshWorkOrders(false);
+      await refreshSelectedWorkOrder(workOrder.id);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Prise en charge refusee pour cet ordre de travail."));
+    } finally {
+      setProcessingActionWorkOrderId(null);
+    }
+  };
+
   const handleStart = async (workOrder: WorkOrder) => {
-    const confirmed = window.confirm(`Demarrer l'intervention ${workOrder.reference} ?`);
-    if (!confirmed) {
+    if (!isAssignedTechnician(workOrder)) {
       return;
     }
 
@@ -361,6 +407,7 @@ export function WorkOrdersPage() {
       await startWorkOrder(workOrder.id);
       toast.success("Intervention demarree avec succes.");
       await refreshWorkOrders(false);
+      await refreshSelectedWorkOrder(workOrder.id);
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Demarrage impossible pour cet ordre de travail."));
     } finally {
@@ -369,6 +416,10 @@ export function WorkOrdersPage() {
   };
 
   const openCloseReportDrawer = (workOrder: WorkOrder) => {
+    if (!isAssignedTechnician(workOrder)) {
+      return;
+    }
+
     setCloseReportTargetWorkOrder(workOrder);
     setCloseReportOpen(true);
   };
@@ -401,6 +452,7 @@ export function WorkOrdersPage() {
       setCloseReportOpen(false);
       setCloseReportTargetWorkOrder(null);
       await refreshWorkOrders(false);
+      await refreshSelectedWorkOrder(closeReportTargetWorkOrder.id);
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Cloture avec rapport impossible pour cet ordre de travail."));
     } finally {
@@ -480,6 +532,7 @@ export function WorkOrdersPage() {
             <option value="ALL">Tous les statuts</option>
             <option value="CREATED">Cree</option>
             <option value="ASSIGNED">Affecte</option>
+            <option value="ACCEPTED">Pris en charge</option>
             <option value="IN_PROGRESS">En cours</option>
             <option value="COMPLETED">Cloture</option>
             <option value="CANCELLED">Annule</option>
@@ -550,8 +603,8 @@ export function WorkOrdersPage() {
             <WorkOrderTable
               workOrders={workOrders}
               canManage={canManage}
-              canStart={canStart}
-              canClose={canCloseWithReport}
+              canInterventionAction={canInterventionAction}
+              currentUserId={currentUserId}
               processingActionWorkOrderId={processingActionWorkOrderId}
               onView={(workOrder) => {
                 void openDetailsDrawer(workOrder);
@@ -560,6 +613,9 @@ export function WorkOrdersPage() {
                 void openEditDrawer(workOrder);
               }}
               onAssign={openAssignDrawer}
+              onAccept={(workOrder) => {
+                void handleAccept(workOrder);
+              }}
               onStart={(workOrder) => {
                 void handleStart(workOrder);
               }}
@@ -596,7 +652,16 @@ export function WorkOrdersPage() {
         open={detailsOpen}
         loading={detailsLoading}
         workOrder={selectedWorkOrder}
+        currentUserId={currentUserId}
+        processingActionWorkOrderId={processingActionWorkOrderId}
         onClose={() => setDetailsOpen(false)}
+        onAccept={(workOrder) => {
+          void handleAccept(workOrder);
+        }}
+        onStart={(workOrder) => {
+          void handleStart(workOrder);
+        }}
+        onComplete={openCloseReportDrawer}
       />
 
       <WorkOrderAssignDrawer

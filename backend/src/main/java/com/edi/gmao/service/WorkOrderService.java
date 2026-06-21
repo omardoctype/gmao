@@ -26,8 +26,10 @@ import com.edi.gmao.repository.EquipmentRepository;
 import com.edi.gmao.repository.InterventionReportRepository;
 import com.edi.gmao.repository.UserRepository;
 import com.edi.gmao.repository.WorkOrderRepository;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Locale;
+import java.util.Objects;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -49,6 +51,7 @@ public class WorkOrderService {
     private final InterventionReportMapper interventionReportMapper;
     private final EquipmentDocumentService equipmentDocumentService;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     public WorkOrderService(
             WorkOrderRepository workOrderRepository,
@@ -59,7 +62,8 @@ public class WorkOrderService {
             WorkOrderMapper workOrderMapper,
             InterventionReportMapper interventionReportMapper,
             EquipmentDocumentService equipmentDocumentService,
-            AuditLogService auditLogService
+            AuditLogService auditLogService,
+            NotificationService notificationService
     ) {
         this.workOrderRepository = workOrderRepository;
         this.equipmentRepository = equipmentRepository;
@@ -70,10 +74,12 @@ public class WorkOrderService {
         this.interventionReportMapper = interventionReportMapper;
         this.equipmentDocumentService = equipmentDocumentService;
         this.auditLogService = auditLogService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
     public WorkOrderResponse create(WorkOrderRequest request) {
+        validateInitialStatus(request.getStatus());
         String normalizedReference = normalizeReference(request.getReference());
         if (workOrderRepository.existsByReferenceIgnoreCase(normalizedReference)) {
             throw new WorkOrderReferenceConflictException(normalizedReference);
@@ -150,6 +156,9 @@ public class WorkOrderService {
     @Transactional
     public WorkOrderResponse update(Long id, WorkOrderRequest request) {
         WorkOrder existingWorkOrder = getWorkOrderOrThrow(id);
+        Integer previousEstimatedDurationMinutes = existingWorkOrder.getEstimatedDurationMinutes();
+        WorkOrderStatus previousStatus = existingWorkOrder.getStatus();
+        validateStatusUpdate(previousStatus, request.getStatus());
         String requestedReference = normalizeReference(request.getReference());
 
         workOrderRepository.findByReferenceIgnoreCase(requestedReference)
@@ -163,17 +172,32 @@ public class WorkOrderService {
 
         workOrderMapper.applyRequestToEntity(request, existingWorkOrder, equipment, breakdown);
         existingWorkOrder.setReference(requestedReference);
+        if (request.getStatus() == null) {
+            existingWorkOrder.setStatus(previousStatus);
+        }
         if (existingWorkOrder.getStatus() == null) {
             existingWorkOrder.setStatus(WorkOrderStatus.CREATED);
         }
 
         WorkOrder updatedWorkOrder = workOrderRepository.save(existingWorkOrder);
+        recordEstimatedDurationChangeIfNeeded(
+                updatedWorkOrder,
+                previousEstimatedDurationMinutes,
+                updatedWorkOrder.getEstimatedDurationMinutes()
+        );
         return workOrderMapper.toResponse(updatedWorkOrder);
     }
 
     @Transactional
     public WorkOrderResponse assignTechnician(Long workOrderId, Long technicianId) {
         WorkOrder workOrder = getWorkOrderOrThrow(workOrderId);
+        if (workOrder.getStatus() != WorkOrderStatus.CREATED && workOrder.getStatus() != WorkOrderStatus.ASSIGNED) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "Technician can only be assigned while the work order is CREATED or ASSIGNED"
+            );
+        }
+
         User technician = userRepository.findById(technicianId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Technician not found with id: " + technicianId));
 
@@ -188,6 +212,9 @@ public class WorkOrderService {
         }
 
         workOrder.setAssignedTechnician(technician);
+        if (workOrder.getAssignedAt() == null) {
+            workOrder.setAssignedAt(LocalDateTime.now());
+        }
         if (workOrder.getStatus() == WorkOrderStatus.CREATED) {
             workOrder.setStatus(WorkOrderStatus.ASSIGNED);
         }
@@ -203,45 +230,71 @@ public class WorkOrderService {
     }
 
     @Transactional
+    public WorkOrderResponse accept(Long workOrderId, Authentication authentication) {
+        WorkOrder workOrder = getWorkOrderOrThrow(workOrderId);
+        User currentUser = getCurrentUser(authentication);
+        validateAssignedTechnician(workOrder, currentUser, "You can only accept your assigned work orders");
+
+        if (workOrder.getStatus() != WorkOrderStatus.ASSIGNED) {
+            throw new ApiException(HttpStatus.CONFLICT, "Only ASSIGNED work order can be accepted");
+        }
+        if (workOrder.getAcceptedAt() != null) {
+            throw new ApiException(HttpStatus.CONFLICT, "Work order acceptance timestamp is already set");
+        }
+
+        workOrder.setStatus(WorkOrderStatus.ACCEPTED);
+        workOrder.setAcceptedAt(LocalDateTime.now());
+
+        WorkOrder updatedWorkOrder = workOrderRepository.save(workOrder);
+        auditLogService.record(
+                "WORK_ORDER_ACCEPTED",
+                "WORK_ORDER",
+                updatedWorkOrder.getId(),
+                "Ordre de travail pris en charge par le technicien."
+        );
+        notificationService.notifyWorkOrderAccepted(updatedWorkOrder);
+        return workOrderMapper.toResponse(updatedWorkOrder);
+    }
+
+    @Transactional
     public WorkOrderResponse start(Long workOrderId, Authentication authentication) {
         WorkOrder workOrder = getWorkOrderOrThrow(workOrderId);
         User currentUser = getCurrentUser(authentication);
+        validateAssignedTechnician(workOrder, currentUser, "You can only start your assigned work orders");
 
-        if (workOrder.getAssignedTechnician() == null
-                || !workOrder.getAssignedTechnician().getId().equals(currentUser.getId())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Work order is not assigned to the current technician");
+        if (workOrder.getStatus() != WorkOrderStatus.ACCEPTED) {
+            throw new ApiException(HttpStatus.CONFLICT, "Only ACCEPTED work order can be started");
         }
-
-        if (workOrder.getStatus() != WorkOrderStatus.ASSIGNED) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Only ASSIGNED work order can be started");
+        if (workOrder.getAcceptedAt() == null) {
+            throw new ApiException(HttpStatus.CONFLICT, "Work order must be accepted before it can be started");
+        }
+        if (workOrder.getStartedAt() != null) {
+            throw new ApiException(HttpStatus.CONFLICT, "Work order start timestamp is already set");
         }
 
         workOrder.setStatus(WorkOrderStatus.IN_PROGRESS);
-        if (workOrder.getStartedAt() == null) {
-            workOrder.setStartedAt(LocalDateTime.now());
-        }
+        workOrder.setStartedAt(LocalDateTime.now());
 
         WorkOrder updatedWorkOrder = workOrderRepository.save(workOrder);
+        auditLogService.record(
+                "WORK_ORDER_STARTED",
+                "WORK_ORDER",
+                updatedWorkOrder.getId(),
+                "Intervention demarree."
+        );
+        notificationService.notifyWorkOrderStarted(updatedWorkOrder);
         return workOrderMapper.toResponse(updatedWorkOrder);
     }
 
     @Transactional
     public WorkOrderResponse close(Long workOrderId) {
         WorkOrder workOrder = getWorkOrderOrThrow(workOrderId);
-        if (workOrder.getStatus() != WorkOrderStatus.IN_PROGRESS) {
-            throw new ApiException(
-                    HttpStatus.BAD_REQUEST,
-                    "Only IN_PROGRESS work order can be closed"
-            );
-        }
 
-        if (workOrder.getStartedAt() == null) {
-            workOrder.setStartedAt(LocalDateTime.now());
-        }
-        workOrder.setStatus(WorkOrderStatus.COMPLETED);
-        workOrder.setCompletedAt(LocalDateTime.now());
+        completeWorkOrder(workOrder, LocalDateTime.now());
 
         WorkOrder updatedWorkOrder = workOrderRepository.save(workOrder);
+        recordCompletionAudit(updatedWorkOrder);
+        notificationService.notifyWorkOrderCompleted(updatedWorkOrder);
         auditLogService.record(
                 "WORK_ORDER_CLOSED",
                 "WORK_ORDER",
@@ -259,31 +312,20 @@ public class WorkOrderService {
     ) {
         WorkOrder workOrder = getWorkOrderOrThrow(workOrderId);
         User currentUser = getCurrentUser(authentication);
-        validateCloseWithReportAccess(workOrder, authentication, currentUser);
+        validateAssignedTechnician(workOrder, currentUser, "You can only complete your assigned work orders");
 
-        if (workOrder.getStatus() != WorkOrderStatus.IN_PROGRESS) {
-            throw new ApiException(
-                    HttpStatus.BAD_REQUEST,
-                    "Only IN_PROGRESS work order can be closed with an intervention report"
-            );
-        }
         if (interventionReportRepository.existsByWorkOrderId(workOrderId)) {
             throw new ApiException(HttpStatus.CONFLICT, "Intervention report already exists for this work order");
         }
 
         LocalDateTime now = LocalDateTime.now();
-        if (workOrder.getStartedAt() == null) {
-            workOrder.setStartedAt(now);
-        }
-        workOrder.setStatus(WorkOrderStatus.COMPLETED);
-        workOrder.setCompletedAt(now);
+        completeWorkOrder(workOrder, now);
 
-        User reportTechnician = resolveReportTechnician(workOrder, authentication, currentUser);
         InterventionReport report = new InterventionReport();
         report.setWorkOrder(workOrder);
         report.setEquipment(workOrder.getEquipment());
         report.setBreakdown(workOrder.getBreakdown());
-        report.setTechnician(reportTechnician);
+        report.setTechnician(currentUser);
         report.setPerformedTasks(normalizeRequiredText(request.getPerformedTasks()));
         report.setRealDiagnosis(normalizeOptionalText(request.getRealDiagnosis()));
         report.setRootCause(normalizeOptionalText(request.getRootCause()));
@@ -306,6 +348,8 @@ public class WorkOrderService {
         savedReport.setEquipmentDocument(document);
         InterventionReport completedReport = interventionReportRepository.save(savedReport);
 
+        recordCompletionAudit(workOrder);
+        notificationService.notifyWorkOrderCompleted(workOrder);
         auditLogService.record(
                 "WORK_ORDER_CLOSED_WITH_REPORT",
                 "WORK_ORDER",
@@ -349,37 +393,108 @@ public class WorkOrderService {
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Current user not found"));
     }
 
-    private void validateCloseWithReportAccess(
-            WorkOrder workOrder,
-            Authentication authentication,
-            User currentUser
-    ) {
-        if (hasAnyRole(authentication, "ROLE_ADMIN", "ROLE_RESPONSABLE_MAINTENANCE")) {
+    private void validateInitialStatus(WorkOrderStatus requestedStatus) {
+        if (requestedStatus == null || requestedStatus == WorkOrderStatus.CREATED
+                || requestedStatus == WorkOrderStatus.ASSIGNED || requestedStatus == WorkOrderStatus.CANCELLED) {
             return;
         }
 
-        if (!hasRole(authentication, "ROLE_TECHNICIAN")) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "You are not allowed to close this work order");
-        }
+        throw new ApiException(
+                HttpStatus.CONFLICT,
+                "Intervention status must be changed through accept, start or complete endpoints"
+        );
+    }
 
-        if (workOrder.getAssignedTechnician() == null
-                || !workOrder.getAssignedTechnician().getId().equals(currentUser.getId())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "You can only close your assigned work orders");
+    private void validateStatusUpdate(WorkOrderStatus currentStatus, WorkOrderStatus requestedStatus) {
+        if (requestedStatus == null || requestedStatus == currentStatus) {
+            return;
+        }
+        if (currentStatus == WorkOrderStatus.COMPLETED) {
+            throw new ApiException(HttpStatus.CONFLICT, "Completed work order status cannot be changed");
+        }
+        if (requestedStatus == WorkOrderStatus.ACCEPTED
+                || requestedStatus == WorkOrderStatus.IN_PROGRESS
+                || requestedStatus == WorkOrderStatus.COMPLETED) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "Intervention status must be changed through accept, start or complete endpoints"
+            );
         }
     }
 
-    private User resolveReportTechnician(
+    private void validateAssignedTechnician(WorkOrder workOrder, User currentUser, String message) {
+        if (workOrder.getAssignedTechnician() == null
+                || !workOrder.getAssignedTechnician().getId().equals(currentUser.getId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, message);
+        }
+    }
+
+    private void completeWorkOrder(WorkOrder workOrder, LocalDateTime completedAt) {
+        if (workOrder.getStatus() != WorkOrderStatus.IN_PROGRESS) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "Only IN_PROGRESS work order can be completed"
+            );
+        }
+        if (workOrder.getStartedAt() == null) {
+            throw new ApiException(HttpStatus.CONFLICT, "Work order must be started before it can be completed");
+        }
+        if (workOrder.getCompletedAt() != null) {
+            throw new ApiException(HttpStatus.CONFLICT, "Work order completion timestamp is already set");
+        }
+
+        int actualDurationMinutes = calculateActualDurationMinutes(workOrder.getStartedAt(), completedAt);
+        workOrder.setStatus(WorkOrderStatus.COMPLETED);
+        workOrder.setCompletedAt(completedAt);
+        workOrder.setActualDurationMinutes(actualDurationMinutes);
+    }
+
+    private int calculateActualDurationMinutes(LocalDateTime startedAt, LocalDateTime completedAt) {
+        long minutes = Duration.between(startedAt, completedAt).toMinutes();
+        if (minutes < 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "Actual duration cannot be negative");
+        }
+        if (minutes > Integer.MAX_VALUE) {
+            throw new ApiException(HttpStatus.CONFLICT, "Actual duration exceeds supported range");
+        }
+        return (int) minutes;
+    }
+
+    private void recordCompletionAudit(WorkOrder workOrder) {
+        auditLogService.record(
+                "WORK_ORDER_COMPLETED",
+                "WORK_ORDER",
+                workOrder.getId(),
+                "Intervention cloturee. Duree reelle calculee : "
+                        + workOrder.getActualDurationMinutes() + " minutes."
+        );
+        auditLogService.record(
+                "WORK_ORDER_ACTUAL_DURATION_CALCULATED",
+                "WORK_ORDER",
+                workOrder.getId(),
+                "Duree reelle calculee : " + workOrder.getActualDurationMinutes() + " minutes."
+        );
+    }
+
+    private void recordEstimatedDurationChangeIfNeeded(
             WorkOrder workOrder,
-            Authentication authentication,
-            User currentUser
+            Integer previousEstimatedDurationMinutes,
+            Integer updatedEstimatedDurationMinutes
     ) {
-        if (hasRole(authentication, "ROLE_TECHNICIAN")) {
-            return currentUser;
+        if (Objects.equals(previousEstimatedDurationMinutes, updatedEstimatedDurationMinutes)) {
+            return;
         }
-        if (workOrder.getAssignedTechnician() != null) {
-            return workOrder.getAssignedTechnician();
-        }
-        return currentUser;
+
+        auditLogService.record(
+                "WORK_ORDER_ESTIMATED_DURATION_CHANGED",
+                "WORK_ORDER",
+                workOrder.getId(),
+                "Duree estimee modifiee : "
+                        + (updatedEstimatedDurationMinutes == null
+                        ? "Non renseignee"
+                        : updatedEstimatedDurationMinutes + " minutes")
+                        + "."
+        );
     }
 
     private String normalizeReference(String reference) {

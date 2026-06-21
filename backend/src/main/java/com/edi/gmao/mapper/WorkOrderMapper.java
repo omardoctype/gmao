@@ -28,6 +28,7 @@ public class WorkOrderMapper {
         workOrder.setStatus(request.getStatus());
         workOrder.setPriority(request.getPriority());
         workOrder.setPlannedDate(request.getPlannedDate());
+        workOrder.setEstimatedDurationMinutes(request.getEstimatedDurationMinutes());
         workOrder.setEstimatedCost(request.getEstimatedCost());
         workOrder.setRealCost(request.getRealCost());
         workOrder.setDescription(trim(request.getDescription()));
@@ -48,8 +49,12 @@ public class WorkOrderMapper {
                 .priority(workOrder.getPriority())
                 .createdAt(workOrder.getCreatedAt())
                 .plannedDate(workOrder.getPlannedDate())
+                .assignedAt(workOrder.getAssignedAt())
+                .acceptedAt(workOrder.getAcceptedAt())
                 .startedAt(workOrder.getStartedAt())
                 .completedAt(workOrder.getCompletedAt())
+                .estimatedDurationMinutes(workOrder.getEstimatedDurationMinutes())
+                .actualDurationMinutes(workOrder.getActualDurationMinutes())
                 .estimatedCost(workOrder.getEstimatedCost())
                 .realCost(workOrder.getRealCost())
                 .description(workOrder.getDescription())

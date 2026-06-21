@@ -15,6 +15,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -67,11 +68,25 @@ public class WorkOrder {
     @Column(name = "planned_date")
     private LocalDateTime plannedDate;
 
+    @Column(name = "assigned_at")
+    private LocalDateTime assignedAt;
+
+    @Column(name = "accepted_at")
+    private LocalDateTime acceptedAt;
+
     @Column(name = "started_at")
     private LocalDateTime startedAt;
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    @PositiveOrZero
+    @Column(name = "estimated_duration_minutes")
+    private Integer estimatedDurationMinutes;
+
+    @PositiveOrZero
+    @Column(name = "actual_duration_minutes")
+    private Integer actualDurationMinutes;
 
     @DecimalMin(value = "0.0", inclusive = true)
     @Column(name = "estimated_cost", precision = 12, scale = 2)
